@@ -122,6 +122,10 @@ func (a *App) LaunchItem(id string) (domain.Item, error) {
 	return a.launcher.LaunchItem(a.context(), id)
 }
 
+func (a *App) SetFavorite(id string, favorite bool) (domain.Item, error) {
+	return a.items.SetFavorite(a.context(), id, favorite)
+}
+
 func (a *App) ListGroups() ([]domain.Group, error) {
 	return a.groups.List(a.context())
 }

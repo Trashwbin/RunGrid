@@ -39,7 +39,7 @@ func (r *ItemRepository) List(ctx context.Context, filter storage.ItemFilter) ([
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
-	query += " ORDER BY name ASC"
+	query += " ORDER BY favorite DESC, COALESCE(last_used_at, 0) DESC, launch_count DESC, name ASC"
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {

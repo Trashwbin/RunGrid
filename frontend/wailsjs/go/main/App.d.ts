@@ -20,6 +20,8 @@ export function RecordLaunch(arg1:string):Promise<domain.Item>;
 
 export function ScanShortcuts():Promise<domain.ScanResult>;
 
+export function SetFavorite(arg1:string,arg2:boolean):Promise<domain.Item>;
+
 export function SyncIcons():Promise<number>;
 
 export function UpdateGroup(arg1:domain.Group):Promise<domain.Group>;

@@ -35,4 +35,5 @@ export type AppItem = {
   accent: Accent;
   glyph: string;
   iconUrl?: string;
+  favorite: boolean;
 };

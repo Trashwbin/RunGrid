@@ -8,6 +8,7 @@ import {
   ListGroups,
   ListItems,
   ScanShortcuts,
+  SetFavorite,
   SyncIcons,
 } from '../wailsjs/go/main/App';
 import type {domain} from '../wailsjs/go/models';
@@ -16,7 +17,9 @@ import {CategoryBar} from './components/layout/CategoryBar';
 import {GroupTabs} from './components/layout/GroupTabs';
 import {SearchBar} from './components/layout/SearchBar';
 import {TopBar} from './components/layout/TopBar';
+import {ContextMenu} from './components/ui/ContextMenu';
 import {toAppItem, toGroupTab} from './utils/items';
+import type {AppItem} from './types';
 
 function App() {
   const [items, setItems] = useState<domain.Item[]>([]);
@@ -26,6 +29,17 @@ function App() {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [menuState, setMenuState] = useState<{
+    open: boolean;
+    x: number;
+    y: number;
+    item: AppItem | null;
+  }>({
+    open: false,
+    x: 0,
+    y: 0,
+    item: null,
+  });
 
   const loadGroups = useCallback(async () => {
     try {
@@ -145,12 +159,14 @@ function App() {
     async (id: string) => {
       try {
         await LaunchItem(id);
+        await loadItems();
       } catch (err) {
         setError(err instanceof Error ? err.message : '启动失败');
       }
     },
-    []
+    [loadItems]
   );
+
 
   const groupTabs = useMemo(
     () => [{id: 'all', label: '全部'}, ...groups.map(toGroupTab)],
@@ -165,6 +181,33 @@ function App() {
   const filteredItems = useMemo(
     () => appItems.filter((item) => item.categoryId === activeCategoryId),
     [appItems, activeCategoryId]
+  );
+
+  const handleOpenMenu = useCallback((item: AppItem, x: number, y: number) => {
+    setMenuState({open: true, x, y, item});
+  }, []);
+
+  const handleCloseMenu = useCallback(() => {
+    setMenuState((prev) => ({...prev, open: false}));
+  }, []);
+
+  const handleMenuAction = useCallback(
+    async (actionId: string) => {
+      const current = menuState.item;
+      if (!current) {
+        return;
+      }
+
+      if (actionId === 'favorite') {
+        try {
+          await SetFavorite(current.id, !current.favorite);
+          await loadItems();
+        } catch (err) {
+          setError(err instanceof Error ? err.message : '更新收藏失败');
+        }
+      }
+    },
+    [menuState.item, loadItems]
   );
 
   return (
@@ -188,9 +231,23 @@ function App() {
           error={error}
           onAddItem={handleAddItem}
           onLaunch={handleLaunch}
+          onOpenMenu={handleOpenMenu}
         />
       </div>
       <SearchBar value={query} onChange={setQuery} />
+      <ContextMenu
+        open={menuState.open}
+        x={menuState.x}
+        y={menuState.y}
+        items={[
+          {
+            id: 'favorite',
+            label: menuState.item?.favorite ? '取消收藏' : '收藏',
+          },
+        ]}
+        onSelect={handleMenuAction}
+        onClose={handleCloseMenu}
+      />
     </div>
   );
 }

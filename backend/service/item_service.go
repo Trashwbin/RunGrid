@@ -27,6 +27,25 @@ func (s *ItemService) Get(ctx context.Context, id string) (domain.Item, error) {
 	return s.repo.Get(ctx, id)
 }
 
+func (s *ItemService) SetFavorite(ctx context.Context, id string, favorite bool) (domain.Item, error) {
+	if strings.TrimSpace(id) == "" {
+		return domain.Item{}, storage.ErrInvalidInput
+	}
+
+	item, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return domain.Item{}, err
+	}
+
+	item.Favorite = favorite
+	updated, err := s.repo.Update(ctx, item)
+	if err != nil {
+		return domain.Item{}, err
+	}
+
+	return updated, nil
+}
+
 func (s *ItemService) GetByPath(ctx context.Context, path string) (domain.Item, error) {
 	clean := strings.TrimSpace(path)
 	if clean == "" {

@@ -38,10 +38,28 @@ func (r *ItemRepository) List(_ context.Context, filter storage.ItemFilter) ([]d
 	}
 
 	sort.Slice(items, func(i, j int) bool {
+		if items[i].Favorite != items[j].Favorite {
+			return items[i].Favorite
+		}
+		iUsed := lastUsedAt(items[i])
+		jUsed := lastUsedAt(items[j])
+		if !iUsed.Equal(jUsed) {
+			return iUsed.After(jUsed)
+		}
+		if items[i].LaunchCount != items[j].LaunchCount {
+			return items[i].LaunchCount > items[j].LaunchCount
+		}
 		return strings.ToLower(items[i].Name) < strings.ToLower(items[j].Name)
 	})
 
 	return items, nil
+}
+
+func lastUsedAt(item domain.Item) time.Time {
+	if item.LastUsedAt != nil {
+		return *item.LastUsedAt
+	}
+	return time.Time{}
 }
 
 func (r *ItemRepository) Get(_ context.Context, id string) (domain.Item, error) {

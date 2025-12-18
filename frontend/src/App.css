@@ -202,6 +202,7 @@
   border-radius: 16px;
   display: grid;
   place-items: center;
+  position: relative;
   font-weight: 700;
   color: #f9f9fb;
   box-shadow: 0 10px 16px rgba(0, 0, 0, 0.28);
@@ -235,6 +236,38 @@
 
 .app-icon--indigo {
   background: linear-gradient(135deg, #6f7dff, #6a4bff);
+}
+
+
+.context-menu {
+  position: fixed;
+  min-width: 160px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--surface-strong);
+  border: 1px solid var(--outline);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 20;
+}
+
+.context-menu-item {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.context-menu-item:hover {
+  background: var(--chip);
+  color: var(--text-primary);
 }
 
 .app-glyph {
