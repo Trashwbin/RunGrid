@@ -23,6 +23,10 @@ func (s *ItemService) List(ctx context.Context, filter storage.ItemFilter) ([]do
 	return s.repo.List(ctx, filter)
 }
 
+func (s *ItemService) Get(ctx context.Context, id string) (domain.Item, error) {
+	return s.repo.Get(ctx, id)
+}
+
 func (s *ItemService) GetByPath(ctx context.Context, path string) (domain.Item, error) {
 	clean := strings.TrimSpace(path)
 	if clean == "" {

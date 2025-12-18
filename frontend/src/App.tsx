@@ -4,6 +4,7 @@ import {categories, menuItems} from './data/mock';
 import {
   CreateGroup,
   CreateItem,
+  LaunchItem,
   ListGroups,
   ListItems,
   ScanShortcuts,
@@ -127,6 +128,17 @@ function App() {
     [loadItems]
   );
 
+  const handleLaunch = useCallback(
+    async (id: string) => {
+      try {
+        await LaunchItem(id);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '启动失败');
+      }
+    },
+    []
+  );
+
   const groupTabs = useMemo(
     () => [{id: 'all', label: '全部'}, ...groups.map(toGroupTab)],
     [groups]
@@ -162,6 +174,7 @@ function App() {
           isLoading={isLoading}
           error={error}
           onAddItem={handleAddItem}
+          onLaunch={handleLaunch}
         />
       </div>
       <SearchBar value={query} onChange={setQuery} />
