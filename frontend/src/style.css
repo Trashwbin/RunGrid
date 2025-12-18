@@ -1,26 +1,49 @@
-html {
-    background-color: rgba(27, 38, 54, 1);
-    text-align: center;
-    color: white;
+:root {
+  color-scheme: dark;
+  font-family: "Nunito", "Trebuchet MS", sans-serif;
+  --bg: #1f2022;
+  --surface: #2a2b2f;
+  --surface-strong: #303136;
+  --chip: #2d2f34;
+  --chip-active: #27375a;
+  --accent: #7aa2ff;
+  --text-primary: #f3f4f6;
+  --text-muted: #a0a4ad;
+  --outline: #373a41;
+  --outline-strong: #4a4f59;
+  --shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
-    margin: 0;
-    color: white;
-    font-family: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
-    "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
+  margin: 0;
+  background: radial-gradient(circle at 20% 20%, #2d3238 0%, #222427 48%, #1b1c1f 100%);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(122, 162, 255, 0.8);
+  outline-offset: 2px;
 }
 
 @font-face {
-    font-family: "Nunito";
-    font-style: normal;
-    font-weight: 400;
-    src: local(""),
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 400;
+  src: local(""),
     url("assets/fonts/nunito-v16-latin-regular.woff2") format("woff2");
 }
 
-#app {
-    height: 100vh;
-    text-align: center;
+#root {
+  min-height: 100vh;
 }
