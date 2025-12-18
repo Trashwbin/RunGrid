@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 
 	"rungrid/backend/domain"
 	"rungrid/backend/service"
 	"rungrid/backend/storage"
-	"rungrid/backend/storage/memory"
+	"rungrid/backend/storage/sqlite"
 )
 
 // App struct
@@ -18,14 +20,30 @@ type App struct {
 }
 
 // NewApp creates a new App application struct
-func NewApp() *App {
-	itemRepo := memory.NewItemRepository()
-	groupRepo := memory.NewGroupRepository()
+func NewApp() (*App, error) {
+	dbPath, err := appDataPath("rungrid")
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := sqlite.Open(dbPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := sqlite.EnsureSchema(context.Background(), db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+
+	itemRepo := sqlite.NewItemRepository(db)
+	groupRepo := sqlite.NewGroupRepository(db)
 
 	return &App{
 		items:  service.NewItemService(itemRepo),
 		groups: service.NewGroupService(groupRepo),
-	}
+		closeFn: db.Close,
+	}, nil
 }
 
 // startup is called when the app starts. The context is saved
@@ -82,4 +100,18 @@ func (a *App) context() context.Context {
 		return a.ctx
 	}
 	return context.Background()
+}
+
+func appDataPath(appName string) (string, error) {
+	configDir, err := os.UserConfigDir()
+	if err != nil || configDir == "" {
+		configDir = "."
+	}
+
+	root := filepath.Join(configDir, appName)
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		return "", err
+	}
+
+	return filepath.Join(root, "rungrid.db"), nil
 }

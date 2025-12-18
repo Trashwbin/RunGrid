@@ -1,0 +1,56 @@
+package sqlite
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+
+	_ "modernc.org/sqlite"
+)
+
+const schema = `
+CREATE TABLE IF NOT EXISTS groups (
+	id TEXT PRIMARY KEY,
+	name TEXT NOT NULL,
+	display_order INTEGER NOT NULL DEFAULT 0,
+	color TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS items (
+	id TEXT PRIMARY KEY,
+	name TEXT NOT NULL,
+	path TEXT NOT NULL,
+	type TEXT NOT NULL,
+	icon_path TEXT NOT NULL DEFAULT '',
+	group_id TEXT NOT NULL DEFAULT '',
+	tags TEXT NOT NULL DEFAULT '[]',
+	favorite INTEGER NOT NULL DEFAULT 0,
+	launch_count INTEGER NOT NULL DEFAULT 0,
+	last_used_at INTEGER,
+	hidden INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_items_group ON items(group_id);
+CREATE INDEX IF NOT EXISTS idx_items_name ON items(name);
+CREATE INDEX IF NOT EXISTS idx_items_last_used ON items(last_used_at);
+`
+
+func Open(path string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		return nil, err
+	}
+
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+	return db, nil
+}
+
+func EnsureSchema(ctx context.Context, db *sql.DB) error {
+	if db == nil {
+		return fmt.Errorf("db is nil")
+	}
+
+	_, err := db.ExecContext(ctx, schema)
+	return err
+}
