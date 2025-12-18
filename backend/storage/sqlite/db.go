@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS items (
 
 CREATE INDEX IF NOT EXISTS idx_items_group ON items(group_id);
 CREATE INDEX IF NOT EXISTS idx_items_name ON items(name);
+CREATE INDEX IF NOT EXISTS idx_items_path ON items(path);
 CREATE INDEX IF NOT EXISTS idx_items_last_used ON items(last_used_at);
 `
 

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"rungrid/backend/domain"
+	"rungrid/backend/scanner"
 	"rungrid/backend/service"
 	"rungrid/backend/storage"
 	"rungrid/backend/storage/sqlite"
@@ -16,6 +17,7 @@ type App struct {
 	ctx     context.Context
 	items   *service.ItemService
 	groups  *service.GroupService
+	scanner *service.ScannerService
 	closeFn func() error
 }
 
@@ -39,9 +41,12 @@ func NewApp() (*App, error) {
 	itemRepo := sqlite.NewItemRepository(db)
 	groupRepo := sqlite.NewGroupRepository(db)
 
+	itemService := service.NewItemService(itemRepo)
+	groupService := service.NewGroupService(groupRepo)
 	app := &App{
-		items:   service.NewItemService(itemRepo),
-		groups:  service.NewGroupService(groupRepo),
+		items:   itemService,
+		groups:  groupService,
+		scanner: service.NewScannerService(scanner.NewDefaultScanner(), itemService),
 		closeFn: db.Close,
 	}
 
@@ -84,6 +89,13 @@ func (a *App) DeleteItem(id string) error {
 
 func (a *App) RecordLaunch(id string) (domain.Item, error) {
 	return a.items.RecordLaunch(a.context(), id)
+}
+
+func (a *App) ScanShortcuts() (domain.ScanResult, error) {
+	if a.scanner == nil {
+		return domain.ScanResult{}, scanner.ErrUnsupported
+	}
+	return a.scanner.Scan(a.context())
 }
 
 func (a *App) ListGroups() ([]domain.Group, error) {

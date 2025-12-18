@@ -80,6 +80,23 @@ func (r *ItemRepository) Get(ctx context.Context, id string) (domain.Item, error
 	return item, nil
 }
 
+func (r *ItemRepository) GetByPath(ctx context.Context, path string) (domain.Item, error) {
+	row := r.db.QueryRowContext(ctx, `
+		SELECT id, name, path, type, icon_path, group_id, tags, favorite, launch_count, last_used_at, hidden
+		FROM items WHERE LOWER(path) = LOWER(?)
+	`, path)
+
+	item, err := scanItem(row)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return domain.Item{}, storage.ErrNotFound
+		}
+		return domain.Item{}, err
+	}
+
+	return item, nil
+}
+
 func (r *ItemRepository) Create(ctx context.Context, item domain.Item) (domain.Item, error) {
 	tags, err := encodeTags(item.Tags)
 	if err != nil {

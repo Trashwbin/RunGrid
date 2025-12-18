@@ -1,4 +1,4 @@
-import type {domain} from '../wailsjs/go/models';
+import type {domain} from '../../wailsjs/go/models';
 import type {Accent, AppItem, GroupTab} from '../types';
 
 const accentPalette: Accent[] = [

@@ -1,7 +1,13 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import './App.css';
 import {categories, menuItems} from './data/mock';
-import {CreateGroup, CreateItem, ListGroups, ListItems} from '../wailsjs/go/main/App';
+import {
+  CreateGroup,
+  CreateItem,
+  ListGroups,
+  ListItems,
+  ScanShortcuts,
+} from '../wailsjs/go/main/App';
 import type {domain} from '../wailsjs/go/models';
 import {AppGrid} from './components/grid/AppGrid';
 import {CategoryBar} from './components/layout/CategoryBar';
@@ -101,6 +107,26 @@ function App() {
     }
   }, [activeCategoryId, activeGroupId, loadItems]);
 
+  const handleMenuSelect = useCallback(
+    async (id: string) => {
+      if (id !== 'scan') {
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+      try {
+        await ScanShortcuts();
+        await loadItems();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '扫描失败');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [loadItems]
+  );
+
   const groupTabs = useMemo(
     () => [{id: 'all', label: '全部'}, ...groups.map(toGroupTab)],
     [groups]
@@ -118,7 +144,7 @@ function App() {
 
   return (
     <div className="app-shell">
-      <TopBar title="RunGrid" menuItems={menuItems} />
+      <TopBar title="RunGrid" menuItems={menuItems} onMenuSelect={handleMenuSelect} />
       <div className="content">
         <CategoryBar
           categories={categories}

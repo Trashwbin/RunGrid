@@ -8,9 +8,10 @@ import {IconButton} from '../ui/IconButton';
 type TopBarProps = {
   title: string;
   menuItems: MenuItem[];
+  onMenuSelect?: (id: string) => void;
 };
 
-export function TopBar({title, menuItems}: TopBarProps) {
+export function TopBar({title, menuItems, onMenuSelect}: TopBarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -20,9 +21,13 @@ export function TopBar({title, menuItems}: TopBarProps) {
     setMenuOpen((prev) => !prev);
   }, []);
 
-  const handleMenuSelect = useCallback(() => {
-    setMenuOpen(false);
-  }, []);
+  const handleMenuSelect = useCallback(
+    (id: string) => {
+      onMenuSelect?.(id);
+      setMenuOpen(false);
+    },
+    [onMenuSelect]
+  );
 
   return (
     <header className="top-bar">
@@ -39,7 +44,11 @@ export function TopBar({title, menuItems}: TopBarProps) {
         />
         <IconButton label="设置" icon={<Icon name="settings" />} />
         <IconButton label="关闭" icon={<Icon name="close" />} />
-        <DropdownMenu open={menuOpen} items={menuItems} onSelect={handleMenuSelect} />
+        <DropdownMenu
+          open={menuOpen}
+          items={menuItems}
+          onSelect={handleMenuSelect}
+        />
       </div>
     </header>
   );

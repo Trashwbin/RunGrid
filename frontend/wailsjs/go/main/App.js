@@ -30,6 +30,10 @@ export function RecordLaunch(arg1) {
   return window['go']['main']['App']['RecordLaunch'](arg1);
 }
 
+export function ScanShortcuts() {
+  return window['go']['main']['App']['ScanShortcuts']();
+}
+
 export function UpdateGroup(arg1) {
   return window['go']['main']['App']['UpdateGroup'](arg1);
 }
