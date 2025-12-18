@@ -42,6 +42,9 @@ func (c *Cache) Ensure(ctx context.Context, source string, force bool) (string, 
 			return dest, nil
 		}
 	}
+	if force {
+		_ = os.Remove(dest)
+	}
 
 	if err := c.extractor.Extract(ctx, source, dest); err != nil {
 		return "", err

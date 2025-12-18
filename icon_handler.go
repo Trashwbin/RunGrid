@@ -19,7 +19,7 @@ func iconFileHandler(root string) http.Handler {
 			return
 		}
 
-		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Header().Set("Cache-Control", "no-cache")
 		r2 := r.Clone(r.Context())
 		r2.URL.Path = strings.TrimPrefix(r.URL.Path, "/icons/")
 		fileServer.ServeHTTP(w, r2)
