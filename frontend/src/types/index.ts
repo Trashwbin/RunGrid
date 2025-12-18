@@ -34,5 +34,5 @@ export type AppItem = {
   groupId: string;
   accent: Accent;
   glyph: string;
-  iconPath?: string;
+  iconUrl?: string;
 };

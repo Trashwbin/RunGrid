@@ -38,6 +38,10 @@ export function ScanShortcuts() {
   return window['go']['main']['App']['ScanShortcuts']();
 }
 
+export function SyncIcons() {
+  return window['go']['main']['App']['SyncIcons']();
+}
+
 export function UpdateGroup(arg1) {
   return window['go']['main']['App']['UpdateGroup'](arg1);
 }

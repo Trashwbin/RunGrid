@@ -97,6 +97,23 @@ func (r *ItemRepository) GetByPath(ctx context.Context, path string) (domain.Ite
 	return item, nil
 }
 
+func (r *ItemRepository) SetIconPath(ctx context.Context, id string, iconPath string) error {
+	result, err := r.db.ExecContext(ctx, "UPDATE items SET icon_path = ? WHERE id = ?", iconPath, id)
+	if err != nil {
+		return err
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return storage.ErrNotFound
+	}
+
+	return nil
+}
+
 func (r *ItemRepository) Create(ctx context.Context, item domain.Item) (domain.Item, error) {
 	tags, err := encodeTags(item.Tags)
 	if err != nil {

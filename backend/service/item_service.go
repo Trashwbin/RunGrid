@@ -35,6 +35,13 @@ func (s *ItemService) GetByPath(ctx context.Context, path string) (domain.Item, 
 	return s.repo.GetByPath(ctx, clean)
 }
 
+func (s *ItemService) SetIconPath(ctx context.Context, id string, iconPath string) error {
+	if strings.TrimSpace(id) == "" {
+		return storage.ErrInvalidInput
+	}
+	return s.repo.SetIconPath(ctx, id, strings.TrimSpace(iconPath))
+}
+
 func (s *ItemService) Create(ctx context.Context, input domain.ItemInput) (domain.Item, error) {
 	if err := validateItemInput(input); err != nil {
 		return domain.Item{}, err

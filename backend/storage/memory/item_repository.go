@@ -73,6 +73,24 @@ func (r *ItemRepository) GetByPath(_ context.Context, path string) (domain.Item,
 	return domain.Item{}, storage.ErrNotFound
 }
 
+func (r *ItemRepository) SetIconPath(_ context.Context, id string, iconPath string) error {
+	if strings.TrimSpace(id) == "" {
+		return storage.ErrInvalidInput
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	item, exists := r.items[id]
+	if !exists {
+		return storage.ErrNotFound
+	}
+
+	item.IconPath = iconPath
+	r.items[id] = item
+	return nil
+}
+
 func (r *ItemRepository) Create(_ context.Context, item domain.Item) (domain.Item, error) {
 	if strings.TrimSpace(item.ID) == "" {
 		return domain.Item{}, storage.ErrInvalidInput

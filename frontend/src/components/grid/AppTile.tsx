@@ -14,8 +14,8 @@ export function AppTile({item, onLaunch}: AppTileProps) {
       onClick={() => onLaunch?.(item.id)}
     >
       <div className={`app-icon app-icon--${item.accent}`} aria-hidden="true">
-        {item.iconPath ? (
-          <img src={item.iconPath} alt="" />
+        {item.iconUrl ? (
+          <img src={item.iconUrl} alt="" />
         ) : (
           <span className="app-glyph">{item.glyph}</span>
         )}

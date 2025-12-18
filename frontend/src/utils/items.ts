@@ -25,7 +25,7 @@ export function toAppItem(item: domain.Item, index: number): AppItem {
     groupId: item.group_id || 'all',
     accent: accentPalette[index % accentPalette.length],
     glyph: makeGlyph(item.name),
-    iconPath: item.icon_path || undefined,
+    iconUrl: toIconURL(item.icon_path),
   };
 }
 
@@ -55,4 +55,18 @@ function makeGlyph(name: string): string {
   }
 
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
+function toIconURL(path: string | undefined): string | undefined {
+  if (!path) {
+    return undefined;
+  }
+
+  const normalized = path.replace(/\\/g, '/');
+  const fileName = normalized.split('/').pop();
+  if (!fileName) {
+    return undefined;
+  }
+
+  return `/icons/${encodeURIComponent(fileName)}`;
 }
