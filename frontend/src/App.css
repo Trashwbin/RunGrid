@@ -207,6 +207,12 @@
   box-shadow: 0 10px 16px rgba(0, 0, 0, 0.28);
 }
 
+.app-icon img {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+}
+
 .app-icon--pink {
   background: linear-gradient(135deg, #ff4f7b, #ff7e57);
 }

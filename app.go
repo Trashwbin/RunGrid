@@ -39,11 +39,18 @@ func NewApp() (*App, error) {
 	itemRepo := sqlite.NewItemRepository(db)
 	groupRepo := sqlite.NewGroupRepository(db)
 
-	return &App{
-		items:  service.NewItemService(itemRepo),
-		groups: service.NewGroupService(groupRepo),
+	app := &App{
+		items:   service.NewItemService(itemRepo),
+		groups:  service.NewGroupService(groupRepo),
 		closeFn: db.Close,
-	}, nil
+	}
+
+	if err := service.EnsureDefaultGroups(context.Background(), app.groups); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+
+	return app, nil
 }
 
 // startup is called when the app starts. The context is saved
