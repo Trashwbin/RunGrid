@@ -28,7 +28,7 @@ func (WindowsExtractor) Extract(ctx context.Context, source string, dest string)
 	}
 
 	script := buildPowerShellScript(source, dest)
-	cmd := exec.CommandContext(ctx, "powershell", "-NoProfile", "-Command", script)
+	cmd := exec.CommandContext(ctx, "powershell", "-NoProfile", "-Sta", "-Command", script)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	return cmd.Run()
 }
@@ -46,8 +46,15 @@ func buildPowerShellScript(source string, dest string) string {
 			"try{$wsh=New-Object -ComObject WScript.Shell;"+
 			"$shortcut=$wsh.CreateShortcut($src);"+
 			"$iconLocation=$shortcut.IconLocation;"+
-			"if($iconLocation){$iconSource=($iconLocation -split ',')[0].Trim()}"+
-			"elseif($shortcut.TargetPath){$iconSource=$shortcut.TargetPath}}catch{}}"+
+			"$targetPath=$shortcut.TargetPath;"+
+			"$iconCandidate='';"+
+			"if($iconLocation){$iconCandidate=($iconLocation -split ',')[0].Trim()}"+
+			"if($iconCandidate -and [System.IO.Path]::GetExtension($iconCandidate).ToLower() -eq '.lnk'){$iconCandidate=''}"+
+			"if(-not $iconCandidate -and $targetPath){$iconCandidate=$targetPath}"+
+			"if($iconCandidate){$iconCandidate=$iconCandidate.Trim('\"').Trim(\"'\");"+
+			"$iconCandidate=[Environment]::ExpandEnvironmentVariables($iconCandidate);"+
+			"if(-not [System.IO.Path]::IsPathRooted($iconCandidate)){$iconCandidate=[System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($src),$iconCandidate)}"+
+			"if(Test-Path $iconCandidate){$iconSource=$iconCandidate}}}catch{}}"+
 			"if([string]::IsNullOrWhiteSpace($iconSource)){$iconSource=$src};"+
 			"$icon=[System.Drawing.Icon]::ExtractAssociatedIcon($iconSource);"+
 			"if($null -eq $icon){throw 'icon not found'};"+
