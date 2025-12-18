@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"rungrid/backend/domain"
+	"rungrid/backend/icon"
 	"rungrid/backend/launcher"
 	"rungrid/backend/scanner"
 	"rungrid/backend/service"
@@ -18,6 +19,7 @@ type App struct {
 	ctx      context.Context
 	items    *service.ItemService
 	groups   *service.GroupService
+	icons    *service.IconService
 	scanner  *service.ScannerService
 	launcher *service.LauncherService
 	closeFn  func() error
@@ -45,10 +47,15 @@ func NewApp() (*App, error) {
 
 	itemService := service.NewItemService(itemRepo)
 	groupService := service.NewGroupService(groupRepo)
+
+	iconRoot := filepath.Join(filepath.Dir(dbPath), "icons")
+	iconCache := icon.NewCache(iconRoot, icon.NewDefaultExtractor())
+	iconService := service.NewIconService(iconCache, itemService)
 	app := &App{
 		items:    itemService,
 		groups:   groupService,
-		scanner:  service.NewScannerService(scanner.NewDefaultScanner(), itemService),
+		icons:    iconService,
+		scanner:  service.NewScannerService(scanner.NewDefaultScanner(), itemService, iconService),
 		launcher: service.NewLauncherService(launcher.NewDefaultLauncher(), itemService),
 		closeFn:  db.Close,
 	}
@@ -99,6 +106,13 @@ func (a *App) ScanShortcuts() (domain.ScanResult, error) {
 		return domain.ScanResult{}, scanner.ErrUnsupported
 	}
 	return a.scanner.Scan(a.context())
+}
+
+func (a *App) SyncIcons() (int, error) {
+	if a.icons == nil {
+		return 0, icon.ErrUnsupported
+	}
+	return a.icons.RefreshAll(a.context())
 }
 
 func (a *App) LaunchItem(id string) (domain.Item, error) {

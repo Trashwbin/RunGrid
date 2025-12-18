@@ -8,6 +8,7 @@ import {
   ListGroups,
   ListItems,
   ScanShortcuts,
+  SyncIcons,
 } from '../wailsjs/go/main/App';
 import type {domain} from '../wailsjs/go/models';
 import {AppGrid} from './components/grid/AppGrid';
@@ -110,19 +111,31 @@ function App() {
 
   const handleMenuSelect = useCallback(
     async (id: string) => {
-      if (id !== 'scan') {
+      if (id === 'scan') {
+        setIsLoading(true);
+        setError(null);
+        try {
+          await ScanShortcuts();
+          await loadItems();
+        } catch (err) {
+          setError(err instanceof Error ? err.message : '扫描失败');
+        } finally {
+          setIsLoading(false);
+        }
         return;
       }
 
-      setIsLoading(true);
-      setError(null);
-      try {
-        await ScanShortcuts();
-        await loadItems();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '扫描失败');
-      } finally {
-        setIsLoading(false);
+      if (id === 'sync-icons') {
+        setIsLoading(true);
+        setError(null);
+        try {
+          await SyncIcons();
+          await loadItems();
+        } catch (err) {
+          setError(err instanceof Error ? err.message : '刷新图标失败');
+        } finally {
+          setIsLoading(false);
+        }
       }
     },
     [loadItems]

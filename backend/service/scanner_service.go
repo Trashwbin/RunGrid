@@ -12,10 +12,11 @@ import (
 type ScannerService struct {
 	scanner scanner.Scanner
 	items   *ItemService
+	icons   *IconService
 }
 
-func NewScannerService(scanner scanner.Scanner, items *ItemService) *ScannerService {
-	return &ScannerService{scanner: scanner, items: items}
+func NewScannerService(scanner scanner.Scanner, items *ItemService, icons *IconService) *ScannerService {
+	return &ScannerService{scanner: scanner, items: items, icons: icons}
 }
 
 func (s *ScannerService) Scan(ctx context.Context) (domain.ScanResult, error) {
@@ -53,6 +54,10 @@ func (s *ScannerService) Scan(ctx context.Context) (domain.ScanResult, error) {
 		}
 
 		result.Inserted++
+	}
+
+	if s.icons != nil {
+		_, _ = s.icons.SyncMissing(ctx)
 	}
 
 	return result, nil

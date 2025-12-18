@@ -16,6 +16,7 @@ type ItemRepository interface {
 	List(ctx context.Context, filter ItemFilter) ([]domain.Item, error)
 	Get(ctx context.Context, id string) (domain.Item, error)
 	GetByPath(ctx context.Context, path string) (domain.Item, error)
+	SetIconPath(ctx context.Context, id string, iconPath string) error
 	Create(ctx context.Context, item domain.Item) (domain.Item, error)
 	Update(ctx context.Context, item domain.Item) (domain.Item, error)
 	Delete(ctx context.Context, id string) error
