@@ -16,6 +16,8 @@ export function ListItems(arg1:string,arg2:string):Promise<Array<domain.Item>>;
 
 export function RecordLaunch(arg1:string):Promise<domain.Item>;
 
+export function ScanShortcuts():Promise<domain.ScanResult>;
+
 export function UpdateGroup(arg1:domain.Group):Promise<domain.Group>;
 
 export function UpdateItem(arg1:domain.ItemUpdate):Promise<domain.Item>;

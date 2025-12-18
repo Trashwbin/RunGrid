@@ -23,6 +23,14 @@ func (s *ItemService) List(ctx context.Context, filter storage.ItemFilter) ([]do
 	return s.repo.List(ctx, filter)
 }
 
+func (s *ItemService) GetByPath(ctx context.Context, path string) (domain.Item, error) {
+	clean := strings.TrimSpace(path)
+	if clean == "" {
+		return domain.Item{}, storage.ErrInvalidInput
+	}
+	return s.repo.GetByPath(ctx, clean)
+}
+
 func (s *ItemService) Create(ctx context.Context, input domain.ItemInput) (domain.Item, error) {
 	if err := validateItemInput(input); err != nil {
 		return domain.Item{}, err

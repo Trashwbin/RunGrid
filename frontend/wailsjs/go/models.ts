@@ -139,6 +139,22 @@ export namespace domain {
 	        this.hidden = source["hidden"];
 	    }
 	}
+	export class ScanResult {
+	    total: number;
+	    inserted: number;
+	    skipped: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ScanResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.total = source["total"];
+	        this.inserted = source["inserted"];
+	        this.skipped = source["skipped"];
+	    }
+	}
 
 }
 

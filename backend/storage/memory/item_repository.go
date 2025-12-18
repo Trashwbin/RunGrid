@@ -56,6 +56,23 @@ func (r *ItemRepository) Get(_ context.Context, id string) (domain.Item, error) 
 	return item, nil
 }
 
+func (r *ItemRepository) GetByPath(_ context.Context, path string) (domain.Item, error) {
+	if strings.TrimSpace(path) == "" {
+		return domain.Item{}, storage.ErrInvalidInput
+	}
+
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	for _, item := range r.items {
+		if strings.EqualFold(item.Path, path) {
+			return item, nil
+		}
+	}
+
+	return domain.Item{}, storage.ErrNotFound
+}
+
 func (r *ItemRepository) Create(_ context.Context, item domain.Item) (domain.Item, error) {
 	if strings.TrimSpace(item.ID) == "" {
 		return domain.Item{}, storage.ErrInvalidInput
