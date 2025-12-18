@@ -1,7 +1,7 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import './App.css';
 import {categories, menuItems} from './data/mock';
-import {ListGroups, ListItems} from '../wailsjs/go/main/App';
+import {CreateGroup, CreateItem, ListGroups, ListItems} from '../wailsjs/go/main/App';
 import type {domain} from '../wailsjs/go/models';
 import {AppGrid} from './components/grid/AppGrid';
 import {CategoryBar} from './components/layout/CategoryBar';
@@ -19,57 +19,87 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
-
-    const loadGroups = async () => {
-      try {
-        const data = await ListGroups();
-        if (active) {
-          setGroups(data);
-        }
-      } catch (err) {
-        if (active) {
-          setError(err instanceof Error ? err.message : '无法加载分组');
-        }
-      }
-    };
-
-    loadGroups();
-
-    return () => {
-      active = false;
-    };
+  const loadGroups = useCallback(async () => {
+    try {
+      const data = await ListGroups();
+      setGroups(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '无法加载分组');
+    }
   }, []);
 
-  useEffect(() => {
-    let active = true;
+  const loadItems = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
-    const loadItems = async () => {
-      try {
-        const data = await ListItems(activeGroupId, query);
-        if (active) {
-          setItems(data);
-        }
-      } catch (err) {
-        if (active) {
-          setError(err instanceof Error ? err.message : '无法加载项目');
-        }
-      } finally {
-        if (active) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadItems();
-
-    return () => {
-      active = false;
-    };
+    try {
+      const data = await ListItems(activeGroupId, query);
+      setItems(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '无法加载项目');
+    } finally {
+      setIsLoading(false);
+    }
   }, [activeGroupId, query]);
+
+  useEffect(() => {
+    loadGroups();
+  }, [loadGroups]);
+
+  useEffect(() => {
+    loadItems();
+  }, [loadItems]);
+
+  const handleAddGroup = useCallback(async () => {
+    const name = window.prompt('分组名称');
+    if (!name) {
+      return;
+    }
+
+    try {
+      const newGroup = await CreateGroup({
+        name,
+        order: groups.length,
+        color: '#4f7dff',
+      });
+      setActiveGroupId(newGroup.id);
+      await loadGroups();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '无法创建分组');
+    }
+  }, [groups.length, loadGroups]);
+
+  const handleAddItem = useCallback(async () => {
+    if (activeGroupId === 'all') {
+      window.alert('请先选择一个分组');
+      return;
+    }
+
+    const name = window.prompt('项目名称');
+    if (!name) {
+      return;
+    }
+    const path = window.prompt('目标路径');
+    if (!path) {
+      return;
+    }
+
+    try {
+      await CreateItem({
+        name,
+        path,
+        type: mapCategoryToType(activeCategoryId),
+        icon_path: '',
+        group_id: activeGroupId,
+        tags: [],
+        favorite: false,
+        hidden: false,
+      });
+      await loadItems();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '无法创建项目');
+    }
+  }, [activeCategoryId, activeGroupId, loadItems]);
 
   const groupTabs = useMemo(
     () => [{id: 'all', label: '全部'}, ...groups.map(toGroupTab)],
@@ -99,8 +129,14 @@ function App() {
           tabs={groupTabs}
           activeId={activeGroupId}
           onSelect={setActiveGroupId}
+          onAdd={handleAddGroup}
         />
-        <AppGrid items={filteredItems} isLoading={isLoading} error={error} />
+        <AppGrid
+          items={filteredItems}
+          isLoading={isLoading}
+          error={error}
+          onAddItem={handleAddItem}
+        />
       </div>
       <SearchBar value={query} onChange={setQuery} />
     </div>
@@ -108,3 +144,17 @@ function App() {
 }
 
 export default App;
+
+function mapCategoryToType(categoryId: string): domain.ItemInput['type'] {
+  switch (categoryId) {
+    case 'folders':
+      return 'folder';
+    case 'docs':
+      return 'doc';
+    case 'system':
+      return 'app';
+    case 'apps':
+    default:
+      return 'app';
+  }
+}

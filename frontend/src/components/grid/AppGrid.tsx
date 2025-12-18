@@ -5,9 +5,15 @@ type AppGridProps = {
   items: AppItem[];
   isLoading?: boolean;
   error?: string | null;
+  onAddItem?: () => void;
 };
 
-export function AppGrid({items, isLoading = false, error = null}: AppGridProps) {
+export function AppGrid({
+  items,
+  isLoading = false,
+  error = null,
+  onAddItem,
+}: AppGridProps) {
   if (error) {
     return (
       <div className="empty-state">
@@ -31,6 +37,11 @@ export function AppGrid({items, isLoading = false, error = null}: AppGridProps) 
       <div className="empty-state">
         <p>暂无项目</p>
         <span>试试更换分组或搜索</span>
+        {onAddItem ? (
+          <button type="button" className="empty-action" onClick={onAddItem}>
+            新增项目
+          </button>
+        ) : null}
       </div>
     );
   }
