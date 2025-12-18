@@ -6,6 +6,7 @@ type AppGridProps = {
   isLoading?: boolean;
   error?: string | null;
   onAddItem?: () => void;
+  onLaunch?: (id: string) => void;
 };
 
 export function AppGrid({
@@ -13,6 +14,7 @@ export function AppGrid({
   isLoading = false,
   error = null,
   onAddItem,
+  onLaunch,
 }: AppGridProps) {
   if (error) {
     return (
@@ -49,7 +51,7 @@ export function AppGrid({
   return (
     <div className="app-grid">
       {items.map((item) => (
-        <AppTile key={item.id} item={item} />
+        <AppTile key={item.id} item={item} onLaunch={onLaunch} />
       ))}
     </div>
   );

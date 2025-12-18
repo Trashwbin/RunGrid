@@ -10,6 +10,8 @@ export function DeleteGroup(arg1:string):Promise<void>;
 
 export function DeleteItem(arg1:string):Promise<void>;
 
+export function LaunchItem(arg1:string):Promise<domain.Item>;
+
 export function ListGroups():Promise<Array<domain.Group>>;
 
 export function ListItems(arg1:string,arg2:string):Promise<Array<domain.Item>>;

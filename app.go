@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"rungrid/backend/domain"
+	"rungrid/backend/launcher"
 	"rungrid/backend/scanner"
 	"rungrid/backend/service"
 	"rungrid/backend/storage"
@@ -14,11 +15,12 @@ import (
 
 // App struct
 type App struct {
-	ctx     context.Context
-	items   *service.ItemService
-	groups  *service.GroupService
-	scanner *service.ScannerService
-	closeFn func() error
+	ctx      context.Context
+	items    *service.ItemService
+	groups   *service.GroupService
+	scanner  *service.ScannerService
+	launcher *service.LauncherService
+	closeFn  func() error
 }
 
 // NewApp creates a new App application struct
@@ -44,10 +46,11 @@ func NewApp() (*App, error) {
 	itemService := service.NewItemService(itemRepo)
 	groupService := service.NewGroupService(groupRepo)
 	app := &App{
-		items:   itemService,
-		groups:  groupService,
-		scanner: service.NewScannerService(scanner.NewDefaultScanner(), itemService),
-		closeFn: db.Close,
+		items:    itemService,
+		groups:   groupService,
+		scanner:  service.NewScannerService(scanner.NewDefaultScanner(), itemService),
+		launcher: service.NewLauncherService(launcher.NewDefaultLauncher(), itemService),
+		closeFn:  db.Close,
 	}
 
 	if err := service.EnsureDefaultGroups(context.Background(), app.groups); err != nil {
@@ -96,6 +99,13 @@ func (a *App) ScanShortcuts() (domain.ScanResult, error) {
 		return domain.ScanResult{}, scanner.ErrUnsupported
 	}
 	return a.scanner.Scan(a.context())
+}
+
+func (a *App) LaunchItem(id string) (domain.Item, error) {
+	if a.launcher == nil {
+		return domain.Item{}, launcher.ErrUnsupported
+	}
+	return a.launcher.LaunchItem(a.context(), id)
 }
 
 func (a *App) ListGroups() ([]domain.Group, error) {

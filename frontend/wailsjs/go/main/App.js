@@ -18,6 +18,10 @@ export function DeleteItem(arg1) {
   return window['go']['main']['App']['DeleteItem'](arg1);
 }
 
+export function LaunchItem(arg1) {
+  return window['go']['main']['App']['LaunchItem'](arg1);
+}
+
 export function ListGroups() {
   return window['go']['main']['App']['ListGroups']();
 }
