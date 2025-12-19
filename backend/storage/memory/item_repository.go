@@ -2,13 +2,12 @@ package memory
 
 import (
 	"context"
-	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"rungrid/backend/domain"
 	"rungrid/backend/storage"
+	"time"
 )
 
 type ItemRepository struct {
@@ -37,29 +36,9 @@ func (r *ItemRepository) List(_ context.Context, filter storage.ItemFilter) ([]d
 		items = append(items, item)
 	}
 
-	sort.Slice(items, func(i, j int) bool {
-		if items[i].Favorite != items[j].Favorite {
-			return items[i].Favorite
-		}
-		iUsed := lastUsedAt(items[i])
-		jUsed := lastUsedAt(items[j])
-		if !iUsed.Equal(jUsed) {
-			return iUsed.After(jUsed)
-		}
-		if items[i].LaunchCount != items[j].LaunchCount {
-			return items[i].LaunchCount > items[j].LaunchCount
-		}
-		return strings.ToLower(items[i].Name) < strings.ToLower(items[j].Name)
-	})
+	storage.SortItems(items)
 
 	return items, nil
-}
-
-func lastUsedAt(item domain.Item) time.Time {
-	if item.LastUsedAt != nil {
-		return *item.LastUsedAt
-	}
-	return time.Time{}
 }
 
 func (r *ItemRepository) Get(_ context.Context, id string) (domain.Item, error) {
