@@ -24,6 +24,7 @@ var docExtensions = map[string]struct{}{
 	".pptx":     {},
 	".csv":      {},
 	".log":      {},
+	".chm":      {},
 }
 
 var webExtensions = map[string]struct{}{
