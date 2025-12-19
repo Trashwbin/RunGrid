@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"rungrid/backend/domain"
 	"rungrid/backend/icon"
@@ -96,6 +97,9 @@ func (a *App) CreateItem(input domain.ItemInput) (domain.Item, error) {
 }
 
 func (a *App) UpdateItem(input domain.ItemUpdate) (domain.Item, error) {
+	if strings.TrimSpace(input.Path) != "" && input.Type == "" {
+		input.Type = scanner.ClassifyPath(input.Path)
+	}
 	return a.items.Update(a.context(), input)
 }
 
@@ -126,6 +130,58 @@ func (a *App) PickScanRoot() (string, error) {
 	return runtime.OpenDirectoryDialog(a.context(), runtime.OpenDialogOptions{
 		Title: "选择扫描目录",
 	})
+}
+
+func (a *App) PickIconSource() (string, error) {
+	return runtime.OpenFileDialog(a.context(), runtime.OpenDialogOptions{
+		Title: "选择图标来源",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "图标/程序文件 (*.png;*.ico;*.exe;*.lnk)",
+				Pattern:     "*.png;*.ico;*.exe;*.lnk",
+			},
+		},
+	})
+}
+
+func (a *App) PreviewIconFromSource(source string) (string, error) {
+	if a.icons == nil {
+		return "", icon.ErrUnsupported
+	}
+	return a.icons.PreviewFromSource(a.context(), source)
+}
+
+func (a *App) PickTargetPath() (string, error) {
+	return runtime.OpenFileDialog(a.context(), runtime.OpenDialogOptions{
+		Title: "选择目标文件",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "应用/快捷方式 (*.exe;*.lnk)",
+				Pattern:     "*.exe;*.lnk",
+			},
+			{
+				DisplayName: "网页/链接 (*.url;*.htm;*.html;*.mht;*.mhtml)",
+				Pattern:     "*.url;*.htm;*.html;*.mht;*.mhtml",
+			},
+			{
+				DisplayName: "所有文件 (*.*)",
+				Pattern:     "*.*",
+			},
+		},
+	})
+}
+
+func (a *App) PickTargetFolder() (string, error) {
+	return runtime.OpenDirectoryDialog(a.context(), runtime.OpenDialogOptions{
+		Title: "选择目标文件夹",
+	})
+}
+
+func (a *App) UpdateItemIconFromSource(id string, source string) (domain.Item, error) {
+	if a.icons == nil {
+		return domain.Item{}, icon.ErrUnsupported
+	}
+	return a.icons.UpdateFromSource(a.context(), id, source)
 }
 
 func (a *App) SyncIcons() (int, error) {

@@ -40,5 +40,7 @@ export type AppItem = {
   accent: Accent;
   glyph: string;
   iconUrl?: string;
+  tags: string[];
   favorite: boolean;
+  hidden: boolean;
 };
