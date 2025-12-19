@@ -21,7 +21,10 @@ import {CategoryBar} from './components/layout/CategoryBar';
 import {GroupTabs} from './components/layout/GroupTabs';
 import {SearchBar} from './components/layout/SearchBar';
 import {TopBar} from './components/layout/TopBar';
+import {ModalHost} from './components/overlay/ModalHost';
+import {ToastHost} from './components/overlay/ToastHost';
 import {ContextMenu} from './components/ui/ContextMenu';
+import {useModalStore, useToastStore} from './store/overlays';
 import {toAppItem, toGroupTab} from './utils/items';
 import type {AppItem} from './types';
 
@@ -33,6 +36,9 @@ function App() {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const notify = useToastStore((state) => state.notify);
+  const openModal = useModalStore((state) => state.openModal);
+  const closeModal = useModalStore((state) => state.closeModal);
   const [menuState, setMenuState] = useState<{
     open: boolean;
     x: number;
@@ -45,14 +51,22 @@ function App() {
     item: null,
   });
 
+  const showError = useCallback(
+    (message: string, title = '操作失败') => {
+      setError(message);
+      notify({type: 'error', title, message});
+    },
+    [notify]
+  );
+
   const loadGroups = useCallback(async () => {
     try {
       const data = await ListGroups();
       setGroups(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '无法加载分组');
+      showError(err instanceof Error ? err.message : '无法加载分组', '加载失败');
     }
-  }, []);
+  }, [showError]);
 
   const loadItems = useCallback(async () => {
     setIsLoading(true);
@@ -62,11 +76,11 @@ function App() {
       const data = await ListItems(activeGroupId, query);
       setItems(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '无法加载项目');
+      showError(err instanceof Error ? err.message : '无法加载项目', '加载失败');
     } finally {
       setIsLoading(false);
     }
-  }, [activeGroupId, query]);
+  }, [activeGroupId, query, showError]);
 
   useEffect(() => {
     loadGroups();
@@ -90,10 +104,11 @@ function App() {
       });
       setActiveGroupId(newGroup.id);
       await loadGroups();
+      notify({type: 'success', title: '分组已创建', message: name});
     } catch (err) {
-      setError(err instanceof Error ? err.message : '无法创建分组');
+      showError(err instanceof Error ? err.message : '无法创建分组');
     }
-  }, [groups.length, loadGroups]);
+  }, [groups.length, loadGroups, notify, showError]);
 
   const handleAddItem = useCallback(async () => {
     if (activeGroupId === 'all') {
@@ -122,60 +137,85 @@ function App() {
         hidden: false,
       });
       await loadItems();
+      notify({type: 'success', title: '项目已添加', message: name});
     } catch (err) {
-      setError(err instanceof Error ? err.message : '无法创建项目');
+      showError(err instanceof Error ? err.message : '无法创建项目');
     }
-  }, [activeCategoryId, activeGroupId, loadItems]);
+  }, [activeCategoryId, activeGroupId, loadItems, notify, showError]);
 
   const handleMenuSelect = useCallback(
     async (id: string) => {
       if (id === 'scan') {
+        const modalId = openModal({
+          kind: 'progress',
+          title: '正在扫描',
+          description: '正在读取快捷方式与系统应用，请稍候…',
+          closable: false,
+          backdropClose: false,
+        });
         setIsLoading(true);
         setError(null);
         try {
           await ScanShortcuts();
           await loadItems();
+          notify({type: 'success', title: '扫描完成', message: '应用列表已更新'});
         } catch (err) {
-          setError(err instanceof Error ? err.message : '扫描失败');
+          showError(err instanceof Error ? err.message : '扫描失败', '扫描失败');
         } finally {
           setIsLoading(false);
+          closeModal(modalId);
         }
         return;
       }
 
       if (id === 'sync-icons') {
+        const modalId = openModal({
+          kind: 'progress',
+          title: '正在刷新图标',
+          description: '图标缓存更新中…',
+          closable: false,
+          backdropClose: false,
+        });
         setIsLoading(true);
         setError(null);
         try {
           await SyncIcons();
           await loadItems();
+          notify({type: 'success', title: '图标已刷新'});
         } catch (err) {
-          setError(err instanceof Error ? err.message : '刷新图标失败');
+          showError(err instanceof Error ? err.message : '刷新图标失败', '刷新失败');
         } finally {
           setIsLoading(false);
+          closeModal(modalId);
         }
         return;
       }
 
       if (id === 'clear') {
-        const confirmed = window.confirm('确定要清空所有项目吗？');
-        if (!confirmed) {
-          return;
-        }
-
-        setIsLoading(true);
-        setError(null);
-        try {
-          await ClearItems();
-          await loadItems();
-        } catch (err) {
-          setError(err instanceof Error ? err.message : '清空失败');
-        } finally {
-          setIsLoading(false);
-        }
+        openModal({
+          kind: 'confirm',
+          title: '确认清空所有项目？',
+          description: '此操作不可恢复，仍要继续吗？',
+          tone: 'danger',
+          primaryLabel: '清空',
+          secondaryLabel: '取消',
+          onConfirm: async () => {
+            setIsLoading(true);
+            setError(null);
+            try {
+              await ClearItems();
+              await loadItems();
+              notify({type: 'success', title: '清空完成', message: '列表已重置'});
+            } catch (err) {
+              showError(err instanceof Error ? err.message : '清空失败', '清空失败');
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        });
       }
     },
-    [loadItems]
+    [closeModal, loadItems, notify, openModal, showError]
   );
 
   const handleLaunch = useCallback(
@@ -184,10 +224,10 @@ function App() {
         await LaunchItem(id);
         await loadItems();
       } catch (err) {
-        setError(err instanceof Error ? err.message : '启动失败');
+        showError(err instanceof Error ? err.message : '启动失败', '启动失败');
       }
     },
-    [loadItems]
+    [loadItems, showError]
   );
 
 
@@ -225,8 +265,13 @@ function App() {
         try {
           await SetFavorite(current.id, !current.favorite);
           await loadItems();
+          notify({
+            type: 'success',
+            title: current.favorite ? '已取消收藏' : '已收藏',
+            message: current.name,
+          });
         } catch (err) {
-          setError(err instanceof Error ? err.message : '更新收藏失败');
+          showError(err instanceof Error ? err.message : '更新收藏失败');
         }
       }
 
@@ -234,7 +279,7 @@ function App() {
         try {
           await OpenItemLocation(current.id);
         } catch (err) {
-          setError(err instanceof Error ? err.message : '无法打开所在目录');
+          showError(err instanceof Error ? err.message : '无法打开所在目录');
         }
       }
 
@@ -242,25 +287,33 @@ function App() {
         try {
           await RefreshItemIcon(current.id);
           await loadItems();
+          notify({type: 'success', title: '图标已刷新', message: current.name});
         } catch (err) {
-          setError(err instanceof Error ? err.message : '刷新图标失败');
+          showError(err instanceof Error ? err.message : '刷新图标失败');
         }
       }
 
       if (actionId === 'remove') {
-        const confirmed = window.confirm(`确定移除 "${current.name}" 吗？`);
-        if (!confirmed) {
-          return;
-        }
-        try {
-          await DeleteItem(current.id);
-          await loadItems();
-        } catch (err) {
-          setError(err instanceof Error ? err.message : '移除失败');
-        }
+        openModal({
+          kind: 'confirm',
+          title: `移除 "${current.name}"？`,
+          description: '移除后会从列表中消失，可通过重新扫描恢复。',
+          tone: 'danger',
+          primaryLabel: '移除',
+          secondaryLabel: '取消',
+          onConfirm: async () => {
+            try {
+              await DeleteItem(current.id);
+              await loadItems();
+              notify({type: 'success', title: '已移除', message: current.name});
+            } catch (err) {
+              showError(err instanceof Error ? err.message : '移除失败');
+            }
+          },
+        });
       }
     },
-    [menuState.item, loadItems]
+    [menuState.item, loadItems, notify, openModal, showError]
   );
 
   const menuItem = menuState.item;
@@ -323,6 +376,8 @@ function App() {
         onSelect={handleMenuAction}
         onClose={handleCloseMenu}
       />
+      <ToastHost />
+      <ModalHost />
     </div>
   );
 }
