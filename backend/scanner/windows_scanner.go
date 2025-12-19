@@ -114,6 +114,9 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 				if resolver != nil {
 					target, args, err := resolver.Resolve(path)
 					if err == nil {
+						if isUninstallerEntry(name, path, target, args) {
+							return nil
+						}
 						itemType = classifyShortcutTarget(path, target, args, itemType)
 						if shortcutKey := shortcutDedupeKey(target, args); shortcutKey != "" {
 							dedupeKey = shortcutKey
@@ -121,6 +124,9 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 					}
 				}
 			} else if ext == ".exe" {
+				if isUninstallerEntry(name, path, path, "") {
+					return nil
+				}
 				if isSystemBinaryPath(path) {
 					itemType = domain.ItemTypeSystem
 				}
