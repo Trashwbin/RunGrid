@@ -5,6 +5,7 @@ go 1.24.0
 require (
 	github.com/go-ole/go-ole v1.3.0
 	github.com/google/uuid v1.6.0
+	github.com/mozillazg/go-pinyin v0.21.0
 	github.com/wailsapp/wails/v2 v2.11.0
 	golang.org/x/sys v0.36.0
 	modernc.org/sqlite v1.40.1
