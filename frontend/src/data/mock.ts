@@ -3,6 +3,7 @@ import type {Category, MenuItem} from '../types';
 export const categories: Category[] = [
   {id: 'apps', label: '应用程序', icon: 'apps'},
   {id: 'system', label: '系统应用', icon: 'system'},
+  {id: 'urls', label: '网址链接', icon: 'link'},
   {id: 'docs', label: '书籍文档', icon: 'docs'},
   {id: 'folders', label: '文件夹', icon: 'folder'},
 ];

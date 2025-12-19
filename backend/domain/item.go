@@ -9,6 +9,7 @@ const (
 	ItemTypeURL    ItemType = "url"
 	ItemTypeFolder ItemType = "folder"
 	ItemTypeDoc    ItemType = "doc"
+	ItemTypeSystem ItemType = "system"
 )
 
 type Item struct {
@@ -50,7 +51,7 @@ type ItemUpdate struct {
 
 func (t ItemType) IsValid() bool {
 	switch t {
-	case ItemTypeApp, ItemTypeURL, ItemTypeFolder, ItemTypeDoc:
+	case ItemTypeApp, ItemTypeURL, ItemTypeFolder, ItemTypeDoc, ItemTypeSystem:
 		return true
 	default:
 		return false

@@ -114,10 +114,15 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 				if resolver != nil {
 					target, args, err := resolver.Resolve(path)
 					if err == nil {
+						itemType = classifyShortcutTarget(path, target, args, itemType)
 						if shortcutKey := shortcutDedupeKey(target, args); shortcutKey != "" {
 							dedupeKey = shortcutKey
 						}
 					}
+				}
+			} else if ext == ".exe" {
+				if isSystemBinaryPath(path) {
+					itemType = domain.ItemTypeSystem
 				}
 			}
 
@@ -165,7 +170,7 @@ func mapExtensionType(ext string) (domain.ItemType, bool) {
 	switch ext {
 	case ".lnk", ".exe":
 		return domain.ItemTypeApp, true
-	case ".url":
+	case ".url", ".htm", ".html", ".mht", ".mhtml":
 		return domain.ItemTypeURL, true
 	default:
 		return "", false

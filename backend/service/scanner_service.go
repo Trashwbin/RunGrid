@@ -36,8 +36,19 @@ func (s *ScannerService) Scan(ctx context.Context) (domain.ScanResult, error) {
 			continue
 		}
 
-		_, err := s.items.GetByPath(ctx, input.Path)
+		existing, err := s.items.GetByPath(ctx, input.Path)
 		if err == nil {
+			if existing.Type != input.Type && input.Type.IsValid() {
+				_, updateErr := s.items.Update(ctx, domain.ItemUpdate{
+					ID:       existing.ID,
+					Type:     input.Type,
+					Favorite: existing.Favorite,
+					Hidden:   existing.Hidden,
+				})
+				if updateErr != nil && !errors.Is(updateErr, storage.ErrInvalidInput) {
+					return result, updateErr
+				}
+			}
 			result.Skipped++
 			continue
 		}
