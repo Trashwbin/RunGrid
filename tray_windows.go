@@ -169,7 +169,7 @@ func (t *trayController) handleCommand(id uint16) {
 		t.showMainWindow()
 	case cmdScan:
 		if t.app != nil {
-			go t.app.ScanShortcuts()
+			go t.app.ScanShortcuts(nil)
 		}
 	case cmdRefreshIcons:
 		if t.app != nil {

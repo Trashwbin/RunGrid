@@ -559,6 +559,99 @@
   white-space: pre-wrap;
 }
 
+.scan-roots {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.scan-roots-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.scan-root-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.scan-root-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--outline);
+  background: var(--surface);
+}
+
+.scan-root-path {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scan-root-remove {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--outline);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.scan-root-remove:hover {
+  color: var(--text-primary);
+  border-color: var(--outline-strong);
+}
+
+.scan-root-empty {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--outline);
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.scan-root-add {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.scan-root-add button {
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--outline);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scan-root-add button:hover {
+  border-color: var(--outline-strong);
+}
+
 .toast-host {
   position: fixed;
   top: 16px;

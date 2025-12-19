@@ -7,6 +7,8 @@ import (
 	"rungrid/backend/domain"
 	"rungrid/backend/scanner"
 	"rungrid/backend/storage"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type ScannerService struct {
@@ -20,8 +22,30 @@ func NewScannerService(scanner scanner.Scanner, items *ItemService, icons *IconS
 }
 
 func (s *ScannerService) Scan(ctx context.Context) (domain.ScanResult, error) {
+	return s.scan(ctx, nil)
+}
+
+func (s *ScannerService) ScanWithRoots(ctx context.Context, roots []string) (domain.ScanResult, error) {
+	return s.scan(ctx, roots)
+}
+
+func (s *ScannerService) scan(ctx context.Context, roots []string) (domain.ScanResult, error) {
 	if s.scanner == nil {
 		return domain.ScanResult{}, scanner.ErrUnsupported
+	}
+
+	if setter, ok := s.scanner.(scanner.RootSetter); ok {
+		if roots == nil {
+			setter.SetRoots(scanner.DefaultRoots())
+		} else {
+			setter.SetRoots(roots)
+		}
+	}
+	if reporter, ok := s.scanner.(scanner.ProgressReporter); ok {
+		reporter.SetProgressReporter(func(progress scanner.ScanProgress) {
+			runtime.EventsEmit(ctx, "scan:progress", progress)
+		})
+		defer reporter.SetProgressReporter(nil)
 	}
 
 	inputs, err := s.scanner.Scan(ctx)

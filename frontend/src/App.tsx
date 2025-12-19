@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import './App.css';
 import {categories, menuItems} from './data/mock';
 import {
@@ -9,6 +9,7 @@ import {
   LaunchItem,
   ListGroups,
   ListItems,
+  ListScanRoots,
   OpenItemLocation,
   RefreshItemIcon,
   ScanShortcuts,
@@ -16,11 +17,13 @@ import {
   SyncIcons,
 } from '../wailsjs/go/main/App';
 import type {domain} from '../wailsjs/go/models';
+import {EventsOn} from '../wailsjs/runtime/runtime';
 import {AppGrid} from './components/grid/AppGrid';
 import {CategoryBar} from './components/layout/CategoryBar';
 import {GroupTabs} from './components/layout/GroupTabs';
 import {SearchBar} from './components/layout/SearchBar';
 import {TopBar} from './components/layout/TopBar';
+import {ScanRootsEditor} from './components/scan/ScanRootsEditor';
 import {ModalHost} from './components/overlay/ModalHost';
 import {ToastHost} from './components/overlay/ToastHost';
 import {ContextMenu} from './components/ui/ContextMenu';
@@ -36,9 +39,13 @@ function App() {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanRoots, setScanRoots] = useState<string[]>([]);
+  const [scanRootsReady, setScanRootsReady] = useState(false);
+  const scanRootsRef = useRef<string[]>([]);
   const notify = useToastStore((state) => state.notify);
   const openModal = useModalStore((state) => state.openModal);
   const closeModal = useModalStore((state) => state.closeModal);
+  const updateModal = useModalStore((state) => state.updateModal);
   const [menuState, setMenuState] = useState<{
     open: boolean;
     x: number;
@@ -58,6 +65,46 @@ function App() {
     },
     [notify]
   );
+
+  const handleScanRootsChange = useCallback((next: string[]) => {
+    setScanRoots(next);
+    scanRootsRef.current = next;
+  }, []);
+
+  useEffect(() => {
+    const cached = window.localStorage.getItem('rungrid.scanRoots');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+        handleScanRootsChange(normalizeRoots(parsed));
+        setScanRootsReady(true);
+        return;
+      }
+    } catch {
+        window.localStorage.removeItem('rungrid.scanRoots');
+      }
+    }
+
+    ListScanRoots()
+      .then((roots) => {
+        handleScanRootsChange(normalizeRoots(roots));
+      })
+      .catch((err) => {
+        showError(
+          err instanceof Error ? err.message : '无法读取扫描路径',
+          '读取失败'
+        );
+      })
+      .finally(() => setScanRootsReady(true));
+  }, [handleScanRootsChange, showError]);
+
+  useEffect(() => {
+    if (!scanRootsReady) {
+      return;
+    }
+    window.localStorage.setItem('rungrid.scanRoots', JSON.stringify(scanRoots));
+  }, [scanRoots, scanRootsReady]);
 
   const loadGroups = useCallback(async () => {
     try {
@@ -143,28 +190,94 @@ function App() {
     }
   }, [activeCategoryId, activeGroupId, loadItems, notify, showError]);
 
+  const startScan = useCallback(
+    async (roots: string[]) => {
+      const normalizedRoots = normalizeRoots(roots);
+      if (normalizedRoots.length === 0) {
+        notify({
+          type: 'warning',
+          title: '请先添加扫描目录',
+          message: '至少保留一个有效路径。',
+        });
+        return;
+      }
+
+      const modalId = openModal({
+        kind: 'progress',
+        title: '正在扫描',
+        description: `正在扫描 ${normalizedRoots.length} 个目录…`,
+        closable: false,
+        backdropClose: false,
+      });
+      const off = EventsOn('scan:progress', (payload: ScanProgressPayload) => {
+        if (!payload) {
+          return;
+        }
+        const patch: {
+          path?: string;
+          progress?: number;
+          description?: string;
+        } = {};
+        if (payload.path) {
+          patch.path = payload.path;
+        }
+        if (typeof payload.percent === 'number' && payload.percent >= 0) {
+          patch.progress = payload.percent;
+        }
+        if (payload.rootTotal && payload.rootIndex) {
+          patch.description = `正在扫描第 ${payload.rootIndex}/${payload.rootTotal} 个目录`;
+        }
+        if (Object.keys(patch).length > 0) {
+          updateModal(modalId, patch);
+        }
+      });
+
+      setIsLoading(true);
+      setError(null);
+      try {
+        await ScanShortcuts(normalizedRoots);
+        await loadItems();
+        notify({type: 'success', title: '扫描完成', message: '应用列表已更新'});
+      } catch (err) {
+        showError(err instanceof Error ? err.message : '扫描失败', '扫描失败');
+      } finally {
+        setIsLoading(false);
+        off();
+        closeModal(modalId);
+      }
+    },
+    [closeModal, loadItems, notify, openModal, showError, updateModal]
+  );
+
   const handleMenuSelect = useCallback(
     async (id: string) => {
       if (id === 'scan') {
-        const modalId = openModal({
-          kind: 'progress',
-          title: '正在扫描',
-          description: '正在读取快捷方式与系统应用，请稍候…',
-          closable: false,
-          backdropClose: false,
-        });
-        setIsLoading(true);
-        setError(null);
-        try {
-          await ScanShortcuts();
-          await loadItems();
-          notify({type: 'success', title: '扫描完成', message: '应用列表已更新'});
-        } catch (err) {
-          showError(err instanceof Error ? err.message : '扫描失败', '扫描失败');
-        } finally {
-          setIsLoading(false);
-          closeModal(modalId);
+        if (!scanRootsReady) {
+          notify({
+            type: 'info',
+            title: '正在读取扫描目录',
+            message: '请稍候再试。',
+          });
+          return;
         }
+        openModal({
+          kind: 'form',
+          title: '扫描路径',
+          description: '选择需要扫描的目录，可随时调整。',
+          size: 'lg',
+          primaryLabel: '开始扫描',
+          secondaryLabel: '取消',
+          content: (
+            <ScanRootsEditor
+              initialRoots={scanRoots}
+              loading={!scanRootsReady}
+              onChange={handleScanRootsChange}
+            />
+          ),
+          onConfirm: () => {
+            void startScan(scanRootsRef.current);
+          },
+        });
         return;
       }
 
@@ -215,7 +328,16 @@ function App() {
         });
       }
     },
-    [closeModal, loadItems, notify, openModal, showError]
+    [
+      closeModal,
+      loadItems,
+      notify,
+      openModal,
+      scanRoots,
+      scanRootsReady,
+      showError,
+      startScan,
+    ]
   );
 
   const handleLaunch = useCallback(
@@ -403,4 +525,31 @@ function mapCategoryToType(categoryId: string): domain.ItemInput['type'] {
 function isWebPath(path: string) {
   const trimmed = path.trim().toLowerCase();
   return trimmed.startsWith('http://') || trimmed.startsWith('https://');
+}
+
+type ScanProgressPayload = {
+  root?: string;
+  path?: string;
+  rootIndex?: number;
+  rootTotal?: number;
+  scanned?: number;
+  percent?: number;
+};
+
+function normalizeRoots(roots: string[]) {
+  const next: string[] = [];
+  const seen = new Set<string>();
+  for (const root of roots) {
+    const trimmed = String(root ?? '').trim();
+    if (!trimmed) {
+      continue;
+    }
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    next.push(trimmed);
+  }
+  return next;
 }

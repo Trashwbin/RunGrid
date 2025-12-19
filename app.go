@@ -12,6 +12,8 @@ import (
 	"rungrid/backend/service"
 	"rungrid/backend/storage"
 	"rungrid/backend/storage/sqlite"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct
@@ -109,11 +111,21 @@ func (a *App) RecordLaunch(id string) (domain.Item, error) {
 	return a.items.RecordLaunch(a.context(), id)
 }
 
-func (a *App) ScanShortcuts() (domain.ScanResult, error) {
+func (a *App) ScanShortcuts(roots []string) (domain.ScanResult, error) {
 	if a.scanner == nil {
 		return domain.ScanResult{}, scanner.ErrUnsupported
 	}
-	return a.scanner.Scan(a.context())
+	return a.scanner.ScanWithRoots(a.context(), roots)
+}
+
+func (a *App) ListScanRoots() ([]string, error) {
+	return scanner.NormalizeRoots(scanner.DefaultRoots()), nil
+}
+
+func (a *App) PickScanRoot() (string, error) {
+	return runtime.OpenDirectoryDialog(a.context(), runtime.OpenDialogOptions{
+		Title: "选择扫描目录",
+	})
 }
 
 func (a *App) SyncIcons() (int, error) {

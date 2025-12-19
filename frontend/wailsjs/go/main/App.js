@@ -34,8 +34,16 @@ export function ListItems(arg1, arg2) {
   return window['go']['main']['App']['ListItems'](arg1, arg2);
 }
 
+export function ListScanRoots() {
+  return window['go']['main']['App']['ListScanRoots']();
+}
+
 export function OpenItemLocation(arg1) {
   return window['go']['main']['App']['OpenItemLocation'](arg1);
+}
+
+export function PickScanRoot() {
+  return window['go']['main']['App']['PickScanRoot']();
 }
 
 export function RecordLaunch(arg1) {
@@ -46,8 +54,8 @@ export function RefreshItemIcon(arg1) {
   return window['go']['main']['App']['RefreshItemIcon'](arg1);
 }
 
-export function ScanShortcuts() {
-  return window['go']['main']['App']['ScanShortcuts']();
+export function ScanShortcuts(arg1) {
+  return window['go']['main']['App']['ScanShortcuts'](arg1);
 }
 
 export function SetFavorite(arg1, arg2) {
