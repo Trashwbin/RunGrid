@@ -18,13 +18,17 @@ export function ListGroups():Promise<Array<domain.Group>>;
 
 export function ListItems(arg1:string,arg2:string):Promise<Array<domain.Item>>;
 
+export function ListScanRoots():Promise<Array<string>>;
+
 export function OpenItemLocation(arg1:string):Promise<void>;
+
+export function PickScanRoot():Promise<string>;
 
 export function RecordLaunch(arg1:string):Promise<domain.Item>;
 
 export function RefreshItemIcon(arg1:string):Promise<domain.Item>;
 
-export function ScanShortcuts():Promise<domain.ScanResult>;
+export function ScanShortcuts(arg1:Array<string>):Promise<domain.ScanResult>;
 
 export function SetFavorite(arg1:string,arg2:boolean):Promise<domain.Item>;
 

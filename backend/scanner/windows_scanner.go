@@ -15,11 +15,12 @@ import (
 )
 
 type WindowsScanner struct {
-	Roots []string
+	Roots    []string
+	progress ProgressFunc
 }
 
 func NewDefaultScanner() Scanner {
-	return &WindowsScanner{Roots: DefaultRoots()}
+	return &WindowsScanner{Roots: NormalizeRoots(DefaultRoots())}
 }
 
 func DefaultRoots() []string {
@@ -38,6 +39,14 @@ func DefaultRoots() []string {
 	}
 
 	return roots
+}
+
+func (s *WindowsScanner) SetRoots(roots []string) {
+	s.Roots = NormalizeRoots(roots)
+}
+
+func (s *WindowsScanner) SetProgressReporter(fn ProgressFunc) {
+	s.progress = fn
 }
 
 func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
@@ -59,7 +68,15 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 		}
 	}()
 
-	for _, root := range s.Roots {
+	roots := NormalizeRoots(s.Roots)
+	if len(roots) == 0 {
+		roots = NormalizeRoots(DefaultRoots())
+	}
+	totalRoots := len(roots)
+	scanned := 0
+	lastEmit := time.Now().Add(-time.Second)
+
+	for index, root := range roots {
 		if root == "" {
 			continue
 		}
@@ -67,6 +84,15 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 		if err != nil || !info.IsDir() {
 			continue
 		}
+
+		s.emitProgress(ScanProgress{
+			Root:      root,
+			Path:      root,
+			RootIndex: index + 1,
+			RootTotal: totalRoots,
+			Scanned:   scanned,
+			Percent:   rootPercent(index, totalRoots),
+		})
 
 		walkErr := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 			if err != nil {
@@ -80,6 +106,19 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 
 			if entry.IsDir() {
 				return nil
+			}
+
+			scanned++
+			if time.Since(lastEmit) >= 200*time.Millisecond {
+				lastEmit = time.Now()
+				s.emitProgress(ScanProgress{
+					Root:      root,
+					Path:      path,
+					RootIndex: index + 1,
+					RootTotal: totalRoots,
+					Scanned:   scanned,
+					Percent:   -1,
+				})
 			}
 
 			ext := strings.ToLower(filepath.Ext(entry.Name()))
@@ -158,6 +197,15 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 		if walkErr != nil {
 			return nil, walkErr
 		}
+
+		s.emitProgress(ScanProgress{
+			Root:      root,
+			Path:      root,
+			RootIndex: index + 1,
+			RootTotal: totalRoots,
+			Scanned:   scanned,
+			Percent:   rootPercent(index+1, totalRoots),
+		})
 	}
 
 	items := make([]domain.ItemInput, 0, len(keys))
@@ -170,6 +218,26 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 	}
 
 	return items, nil
+}
+
+func (s *WindowsScanner) emitProgress(progress ScanProgress) {
+	if s.progress == nil {
+		return
+	}
+	s.progress(progress)
+}
+
+func rootPercent(index, total int) int {
+	if total <= 0 {
+		return 0
+	}
+	if index < 0 {
+		index = 0
+	}
+	if index > total {
+		index = total
+	}
+	return index * 100 / total
 }
 
 func mapExtensionType(ext string) (domain.ItemType, bool) {
