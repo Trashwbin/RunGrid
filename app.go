@@ -60,6 +60,8 @@ func NewApp() (*App, error) {
 		closeFn:  db.Close,
 	}
 
+	globalTray.setApp(app)
+
 	if err := service.EnsureDefaultGroups(context.Background(), app.groups); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -72,10 +74,12 @@ func NewApp() (*App, error) {
 // so we can call the runtime methods.
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	globalTray.start(ctx)
 }
 
 // shutdown is called when the app is terminating.
 func (a *App) shutdown(ctx context.Context) {
+	globalTray.stop()
 	if a.closeFn != nil {
 		_ = a.closeFn()
 	}
