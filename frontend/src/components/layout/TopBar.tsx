@@ -4,6 +4,7 @@ import {useOutsideClick} from '../../hooks/useOutsideClick';
 import {DropdownMenu} from '../ui/DropdownMenu';
 import {Icon} from '../ui/Icon';
 import {IconButton} from '../ui/IconButton';
+import {WindowHide} from '../../../wailsjs/runtime/runtime';
 
 type TopBarProps = {
   title: string;
@@ -29,6 +30,10 @@ export function TopBar({title, menuItems, onMenuSelect}: TopBarProps) {
     [onMenuSelect]
   );
 
+  const handleClose = useCallback(() => {
+    WindowHide();
+  }, []);
+
   return (
     <header className="top-bar">
       <div className="brand">
@@ -42,8 +47,7 @@ export function TopBar({title, menuItems, onMenuSelect}: TopBarProps) {
           isActive={menuOpen}
           onClick={handleMenuToggle}
         />
-        <IconButton label="设置" icon={<Icon name="settings" />} />
-        <IconButton label="关闭" icon={<Icon name="close" />} />
+        <IconButton label="隐藏到托盘" icon={<Icon name="close" />} onClick={handleClose} />
         <DropdownMenu
           open={menuOpen}
           items={menuItems}

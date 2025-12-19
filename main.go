@@ -7,6 +7,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/windows"
 )
 
 //go:embed all:frontend/dist
@@ -28,9 +29,10 @@ func main() {
 
 	// Create application with options
 	err = wails.Run(&options.App{
-		Title:  "rungrid",
-		Width:  1024,
-		Height: 768,
+		Title:     "rungrid",
+		Width:     1024,
+		Height:    768,
+		Frameless: true,
 		AssetServer: &assetserver.Options{
 			Assets:  assets,
 			Handler: iconFileHandler(iconRoot),
@@ -38,6 +40,9 @@ func main() {
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.startup,
 		OnShutdown:       app.shutdown,
+		Windows: &windows.Options{
+			DisableWindowIcon: false,
+		},
 		Bind: []interface{}{
 			app,
 		},
