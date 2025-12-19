@@ -78,6 +78,11 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 
 			name := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
 			name = strings.TrimSpace(name)
+			if ext == ".lnk" {
+				if displayName, ok := lookupDisplayName(path); ok {
+					name = displayName
+				}
+			}
 			if name == "" {
 				name = entry.Name()
 			}
