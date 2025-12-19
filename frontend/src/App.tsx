@@ -30,6 +30,7 @@ import {EditItemForm, type EditDraft} from './components/item/EditItemForm';
 import {ModalHost} from './components/overlay/ModalHost';
 import {ToastHost} from './components/overlay/ToastHost';
 import {ContextMenu} from './components/ui/ContextMenu';
+import {ScrollArea} from './components/ui/ScrollArea';
 import {useModalStore, useToastStore} from './store/overlays';
 import {toAppItem, toGroupTab} from './utils/items';
 import type {AppItem} from './types';
@@ -534,7 +535,7 @@ function App() {
           onSelect={setActiveGroupId}
           onAdd={handleAddGroup}
         />
-        <div className="grid-scroll">
+        <ScrollArea className="grid-scroll" viewportClassName="grid-scroll__viewport">
           <AppGrid
             items={filteredItems}
             isLoading={isLoading}
@@ -543,7 +544,7 @@ function App() {
             onLaunch={handleLaunch}
             onOpenMenu={handleOpenMenu}
           />
-        </div>
+        </ScrollArea>
       </div>
       <SearchBar value={query} onChange={setQuery} />
       <ContextMenu

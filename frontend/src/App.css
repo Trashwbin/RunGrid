@@ -192,8 +192,10 @@
 .grid-scroll {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  padding-right: 4px;
+}
+
+.grid-scroll__viewport {
+  padding-right: 8px;
 }
 
 .app-grid {
@@ -572,12 +574,19 @@
 }
 
 .scan-root-list {
+  max-height: 220px;
+}
+
+.scan-root-list__viewport {
+  padding-right: 8px;
+  max-height: 220px;
+  height: auto;
+}
+
+.scan-root-items {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 220px;
-  overflow: auto;
-  padding-right: 4px;
 }
 
 .scan-root-item {
