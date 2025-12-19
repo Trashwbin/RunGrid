@@ -1,6 +1,7 @@
 import {useMemo, useState} from 'react';
 import {PickScanRoot} from '../../../wailsjs/go/main/App';
 import {Icon} from '../ui/Icon';
+import {ScrollArea} from '../ui/ScrollArea';
 
 type ScanRootsEditorProps = {
   initialRoots: string[];
@@ -53,7 +54,11 @@ export function ScanRootsEditor({
       <p className="scan-roots-hint">
         默认会扫描桌面与开始菜单目录，你可以移除或追加路径。
       </p>
-      <div className="scan-root-list">
+      <ScrollArea
+        className="scan-root-list scroll-area--auto"
+        viewportClassName="scan-root-list__viewport"
+        contentClassName="scan-root-items"
+      >
         {hasRoots ? (
           normalizedRoots.map((root, index) => (
             <div key={`${root}-${index}`} className="scan-root-item">
@@ -73,7 +78,7 @@ export function ScanRootsEditor({
         ) : (
           <div className="scan-root-empty">暂无扫描目录</div>
         )}
-      </div>
+      </ScrollArea>
       <div className="scan-root-add">
         <button type="button" onClick={handleAdd}>
           <Icon name="plus" size={16} />
