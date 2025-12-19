@@ -124,6 +124,10 @@ func (s *ItemService) Delete(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, id)
 }
 
+func (s *ItemService) Clear(ctx context.Context) (int, error) {
+	return s.repo.Clear(ctx)
+}
+
 func (s *ItemService) RecordLaunch(ctx context.Context, id string) (domain.Item, error) {
 	return s.repo.IncrementLaunch(ctx, id, time.Now())
 }

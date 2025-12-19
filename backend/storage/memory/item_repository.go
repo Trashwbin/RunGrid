@@ -157,6 +157,15 @@ func (r *ItemRepository) Delete(_ context.Context, id string) error {
 	return nil
 }
 
+func (r *ItemRepository) Clear(_ context.Context) (int, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	count := len(r.items)
+	r.items = make(map[string]domain.Item)
+	return count, nil
+}
+
 func (r *ItemRepository) IncrementLaunch(_ context.Context, id string, usedAt time.Time) (domain.Item, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

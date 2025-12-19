@@ -208,6 +208,20 @@ func (r *ItemRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+func (r *ItemRepository) Clear(ctx context.Context) (int, error) {
+	result, err := r.db.ExecContext(ctx, "DELETE FROM items")
+	if err != nil {
+		return 0, err
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(affected), nil
+}
+
 func (r *ItemRepository) IncrementLaunch(ctx context.Context, id string, usedAt time.Time) (domain.Item, error) {
 	result, err := r.db.ExecContext(ctx, `
 		UPDATE items
