@@ -503,23 +503,13 @@ function App() {
       }
 
       if (actionId === 'remove') {
-        openModal({
-          kind: 'confirm',
-          title: `移除 "${current.name}"？`,
-          description: '移除后会从列表中消失，可通过重新扫描恢复。',
-          tone: 'danger',
-          primaryLabel: '移除',
-          secondaryLabel: '取消',
-          onConfirm: async () => {
-            try {
-              await DeleteItem(current.id);
-              await loadItems();
-              notify({type: 'success', title: '已移除', message: current.name});
-            } catch (err) {
-              showError(err instanceof Error ? err.message : '移除失败');
-            }
-          },
-        });
+        try {
+          await DeleteItem(current.id);
+          await loadItems();
+          notify({type: 'success', title: '已移除', message: current.name});
+        } catch (err) {
+          showError(err instanceof Error ? err.message : '移除失败');
+        }
       }
     },
     [menuState.item, loadItems, notify, openModal, showError, closeModal]
