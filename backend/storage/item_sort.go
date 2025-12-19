@@ -8,20 +8,40 @@ import (
 )
 
 func SortItems(items []domain.Item) {
-	sort.Slice(items, func(i, j int) bool {
-		if items[i].Favorite != items[j].Favorite {
-			return items[i].Favorite
+	type itemSortEntry struct {
+		item domain.Item
+		key  string
+	}
+
+	entries := make([]itemSortEntry, len(items))
+	for i, item := range items {
+		entries[i] = itemSortEntry{
+			item: item,
+			key:  sortKeyForItem(item),
 		}
-		iUsed := lastUsedAt(items[i])
-		jUsed := lastUsedAt(items[j])
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].item.Favorite != entries[j].item.Favorite {
+			return entries[i].item.Favorite
+		}
+		iUsed := lastUsedAt(entries[i].item)
+		jUsed := lastUsedAt(entries[j].item)
 		if !iUsed.Equal(jUsed) {
 			return iUsed.After(jUsed)
 		}
-		if items[i].LaunchCount != items[j].LaunchCount {
-			return items[i].LaunchCount > items[j].LaunchCount
+		if entries[i].item.LaunchCount != entries[j].item.LaunchCount {
+			return entries[i].item.LaunchCount > entries[j].item.LaunchCount
 		}
-		return compareItemName(items[i].Name, items[j].Name) < 0
+		if entries[i].key != entries[j].key {
+			return compareItemName(entries[i].key, entries[j].key) < 0
+		}
+		return compareItemName(entries[i].item.Name, entries[j].item.Name) < 0
 	})
+
+	for i := range items {
+		items[i] = entries[i].item
+	}
 }
 
 func lastUsedAt(item domain.Item) time.Time {
