@@ -43,27 +43,30 @@ func buildPowerShellScript(source string, dest string) string {
 			"$src='%s';"+
 			"$dst='%s';"+
 			"$iconSource=$src;"+
+			"$iconIndex=0;"+
 			"if([System.IO.Path]::GetExtension($src).ToLower() -eq '.lnk'){"+
 			"try{$wsh=New-Object -ComObject WScript.Shell;"+
 			"$shortcut=$wsh.CreateShortcut($src);"+
 			"$iconLocation=$shortcut.IconLocation;"+
 			"$targetPath=$shortcut.TargetPath;"+
 			"$iconCandidate='';"+
-			"if($iconLocation){$iconCandidate=($iconLocation -split ',')[0].Trim()}"+
+			"if($iconLocation){$parts=$iconLocation -split ',';$iconCandidate=$parts[0].Trim();if($parts.Length -gt 1){try{$iconIndex=[int]$parts[1].Trim()}catch{$iconIndex=0}}}"+
 			"if($iconCandidate -and [System.IO.Path]::GetExtension($iconCandidate).ToLower() -eq '.lnk'){$iconCandidate=''}"+
 			"if(-not $iconCandidate -and $targetPath){$iconCandidate=$targetPath}"+
 			"if($iconCandidate){$iconCandidate=$iconCandidate.Trim('\"').Trim(\"'\");"+
 			"$iconCandidate=[Environment]::ExpandEnvironmentVariables($iconCandidate);"+
 			"if(-not [System.IO.Path]::IsPathRooted($iconCandidate)){$iconCandidate=[System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($src),$iconCandidate)}"+
-			"if(Test-Path $iconCandidate){$iconSource=$iconCandidate}}}catch{}}"+
+			"$resolved=$iconCandidate;"+
+			"if(-not (Test-Path $resolved)){$lower=$resolved.ToLower();$exts=@('.exe','.dll','.cpl','.msc','.ico');foreach($ext in $exts){$idx=$lower.IndexOf($ext);if($idx -ge 0){$candidate=$resolved.Substring(0,$idx+$ext.Length);if(Test-Path $candidate){$resolved=$candidate;break}}}}"+
+			"if(Test-Path $resolved){$iconSource=$resolved}}}catch{}}"+
 			"if([string]::IsNullOrWhiteSpace($iconSource)){$iconSource=$src};"+
 			"$sizes=@(256,128,96,64,48,32);"+
 			"foreach($sz in $sizes){"+
 			"$hLarge=[IntPtr]::Zero; $hSmall=[IntPtr]::Zero;"+
-			"$res=[RunGrid.IconUtil]::SHDefExtractIcon($iconSource,0,0,[ref]$hLarge,[ref]$hSmall,$sz);"+
+			"$res=[RunGrid.IconUtil]::SHDefExtractIcon($iconSource,$iconIndex,0,[ref]$hLarge,[ref]$hSmall,$sz);"+
 			"if($res -ge 0 -and $hLarge -ne [IntPtr]::Zero){$icon=[System.Drawing.Icon]::FromHandle($hLarge);$bmp=$icon.ToBitmap();$bmp.Save($dst,[System.Drawing.Imaging.ImageFormat]::Png);$bmp.Dispose();$icon.Dispose();[RunGrid.IconUtil]::DestroyIcon($hLarge);if($hSmall -ne [IntPtr]::Zero){[RunGrid.IconUtil]::DestroyIcon($hSmall)};return}}"+
 			"$hicons=@([IntPtr]::Zero);$ids=@(0);"+
-			"foreach($sz in $sizes){$count=[RunGrid.IconUtil]::PrivateExtractIcons($iconSource,0,$sz,$sz,$hicons,$ids,1,0);if($count -gt 0 -and $hicons[0] -ne [IntPtr]::Zero){$icon=[System.Drawing.Icon]::FromHandle($hicons[0]);$bmp=$icon.ToBitmap();$bmp.Save($dst,[System.Drawing.Imaging.ImageFormat]::Png);$bmp.Dispose();$icon.Dispose();[RunGrid.IconUtil]::DestroyIcon($hicons[0]);return}}"+
+			"foreach($sz in $sizes){$count=[RunGrid.IconUtil]::PrivateExtractIcons($iconSource,$iconIndex,$sz,$sz,$hicons,$ids,1,0);if($count -gt 0 -and $hicons[0] -ne [IntPtr]::Zero){$icon=[System.Drawing.Icon]::FromHandle($hicons[0]);$bmp=$icon.ToBitmap();$bmp.Save($dst,[System.Drawing.Imaging.ImageFormat]::Png);$bmp.Dispose();$icon.Dispose();[RunGrid.IconUtil]::DestroyIcon($hicons[0]);return}}"+
 			"$icon=$null;"+
 			"try{$icon=New-Object System.Drawing.Icon($iconSource)}catch{};"+
 			"if($null -eq $icon){$icon=[System.Drawing.Icon]::ExtractAssociatedIcon($iconSource)};"+
