@@ -1,4 +1,4 @@
-import {useEffect, useRef} from 'react';
+import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {useOutsideClick} from '../../hooks/useOutsideClick';
 
 type ContextMenuItem = {
@@ -26,8 +26,42 @@ export function ContextMenu({
   onClose,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({x, y});
 
   useOutsideClick(menuRef, onClose, open);
+
+  const updatePosition = useCallback(() => {
+    const menu = menuRef.current;
+    if (!menu) {
+      return;
+    }
+    const rect = menu.getBoundingClientRect();
+    const padding = 8;
+    let nextX = x;
+    let nextY = y;
+
+    if (x + rect.width + padding > window.innerWidth) {
+      nextX = x - rect.width;
+    }
+    if (y + rect.height + padding > window.innerHeight) {
+      nextY = y - rect.height;
+    }
+
+    const maxX = window.innerWidth - rect.width - padding;
+    const maxY = window.innerHeight - rect.height - padding;
+    nextX = Math.max(padding, Math.min(nextX, maxX));
+    nextY = Math.max(padding, Math.min(nextY, maxY));
+    setPosition({x: nextX, y: nextY});
+  }, [x, y]);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      return;
+    }
+    setPosition({x, y});
+    const frame = window.requestAnimationFrame(updatePosition);
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, x, y, updatePosition, items.length]);
 
   useEffect(() => {
     if (!open) {
@@ -46,6 +80,15 @@ export function ContextMenu({
     };
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const handleResize = () => updatePosition();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [open, updatePosition]);
+
   if (!open) {
     return null;
   }
@@ -54,7 +97,7 @@ export function ContextMenu({
     <div
       ref={menuRef}
       className="context-menu"
-      style={{left: `${x}px`, top: `${y}px`}}
+      style={{left: `${position.x}px`, top: `${position.y}px`}}
       role="menu"
     >
       {items.map((item) => (
