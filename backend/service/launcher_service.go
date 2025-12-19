@@ -47,6 +47,28 @@ func (s *LauncherService) LaunchItem(ctx context.Context, id string) (domain.Ite
 	return s.items.RecordLaunch(ctx, id)
 }
 
+func (s *LauncherService) OpenItemLocation(ctx context.Context, id string) error {
+	if strings.TrimSpace(id) == "" {
+		return storage.ErrInvalidInput
+	}
+
+	if s.launcher == nil {
+		return launcher.ErrUnsupported
+	}
+
+	item, err := s.items.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	location, err := resolveLocationPath(ctx, item)
+	if err != nil {
+		return err
+	}
+
+	return s.launcher.Open(ctx, location)
+}
+
 func validateLaunchTarget(item domain.Item) error {
 	target := strings.TrimSpace(item.Path)
 	if target == "" {
@@ -85,6 +107,49 @@ func validateLaunchTarget(item domain.Item) error {
 	}
 
 	return storage.ErrInvalidInput
+}
+
+func resolveLocationPath(ctx context.Context, item domain.Item) (string, error) {
+	target := strings.TrimSpace(item.Path)
+	if target == "" {
+		return "", storage.ErrInvalidInput
+	}
+	if isWebURL(target) {
+		return "", storage.ErrInvalidInput
+	}
+	if isUNCPath(target) {
+		return "", storage.ErrInvalidInput
+	}
+	if !filepath.IsAbs(target) {
+		return "", storage.ErrInvalidInput
+	}
+
+	location := target
+	if strings.EqualFold(filepath.Ext(target), ".lnk") {
+		resolved, err := resolveShortcutTarget(ctx, target)
+		if err == nil && strings.TrimSpace(resolved) != "" {
+			location = strings.TrimSpace(resolved)
+		}
+	}
+
+	location = strings.TrimSpace(location)
+	if location == "" {
+		return "", storage.ErrInvalidInput
+	}
+
+	info, err := os.Stat(location)
+	if err == nil {
+		if info.IsDir() {
+			return location, nil
+		}
+		return filepath.Dir(location), nil
+	}
+
+	dir := filepath.Dir(location)
+	if dir == "" || dir == "." {
+		return "", storage.ErrInvalidInput
+	}
+	return dir, nil
 }
 
 func isWebURL(target string) bool {

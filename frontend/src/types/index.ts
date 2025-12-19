@@ -27,11 +27,15 @@ export type MenuItem = {
 
 export type Accent = 'pink' | 'blue' | 'orange' | 'teal' | 'azure' | 'indigo';
 
+export type AppItemType = 'app' | 'doc' | 'folder' | 'url';
+
 export type AppItem = {
   id: string;
   name: string;
   categoryId: string;
   groupId: string;
+  type: AppItemType;
+  path: string;
   accent: Accent;
   glyph: string;
   iconUrl?: string;

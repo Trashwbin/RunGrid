@@ -16,7 +16,11 @@ export function ListGroups():Promise<Array<domain.Group>>;
 
 export function ListItems(arg1:string,arg2:string):Promise<Array<domain.Item>>;
 
+export function OpenItemLocation(arg1:string):Promise<void>;
+
 export function RecordLaunch(arg1:string):Promise<domain.Item>;
+
+export function RefreshItemIcon(arg1:string):Promise<domain.Item>;
 
 export function ScanShortcuts():Promise<domain.ScanResult>;
 

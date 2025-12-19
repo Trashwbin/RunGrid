@@ -23,6 +23,8 @@ export function toAppItem(item: domain.Item, index: number): AppItem {
     name: item.name,
     categoryId: mapTypeToCategory(item.type),
     groupId: item.group_id || 'all',
+    type: item.type as AppItem['type'],
+    path: item.path,
     accent: accentPalette[index % accentPalette.length],
     glyph: makeGlyph(item.name),
     iconUrl: toIconURL(item.icon_path),

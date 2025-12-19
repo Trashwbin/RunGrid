@@ -4,6 +4,8 @@ import {useOutsideClick} from '../../hooks/useOutsideClick';
 type ContextMenuItem = {
   id: string;
   label: string;
+  disabled?: boolean;
+  tone?: 'danger';
 };
 
 type ContextMenuProps = {
@@ -59,9 +61,13 @@ export function ContextMenu({
         <button
           key={item.id}
           type="button"
-          className="context-menu-item"
+          className={`context-menu-item${item.tone === 'danger' ? ' context-menu-item--danger' : ''}`}
           role="menuitem"
+          disabled={item.disabled}
           onClick={() => {
+            if (item.disabled) {
+              return;
+            }
             onSelect(item.id);
             onClose();
           }}
