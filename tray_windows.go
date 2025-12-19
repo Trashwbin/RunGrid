@@ -5,6 +5,8 @@ package main
 import (
 	"context"
 	_ "embed"
+	"errors"
+	"os"
 	"runtime"
 	"sync/atomic"
 	"unsafe"
@@ -87,7 +89,7 @@ func (t *trayController) loop() {
 	}
 	t.hWnd = windows.Handle(hwnd)
 
-	icon, iconErr := createIconFromResource(trayIconData)
+	icon, iconErr := loadIconFromBytes(trayIconData)
 	if iconErr == nil && icon != 0 {
 		t.hIcon = icon
 		if err := t.addIcon("RunGrid"); err != nil {
@@ -252,23 +254,7 @@ func (t *trayController) removeIcon() {
 }
 
 func createIconFromResource(data []byte) (windows.Handle, error) {
-	if len(data) == 0 {
-		return 0, nil
-	}
-	ptr := unsafe.Pointer(&data[0])
-	h, _, err := procCreateIconFromResourceEx.Call(
-		uintptr(ptr),
-		uintptr(len(data)),
-		1,
-		0x00030000,
-		0,
-		0,
-		lrDefaultColor,
-	)
-	if h == 0 {
-		return 0, err
-	}
-	return windows.Handle(h), nil
+	return loadIconFromBytes(data)
 }
 
 func setUTF16(dst []uint16, value string) {
@@ -359,6 +345,8 @@ const (
 	cmdQuit         = 1004
 
 	lrDefaultColor = 0x00000000
+	imageIcon      = 1
+	lrLoadFromFile = 0x00000010
 )
 
 var (
@@ -383,6 +371,7 @@ var (
 	procCreateIconFromResourceEx = modUser32.NewProc("CreateIconFromResourceEx")
 	procGetModuleHandleW         = modKernel32.NewProc("GetModuleHandleW")
 	procDestroyIcon              = modUser32.NewProc("DestroyIcon")
+	procLoadImageW               = modUser32.NewProc("LoadImageW")
 )
 
 func getModuleHandle() windows.Handle {
@@ -396,6 +385,43 @@ func destroyIcon(icon windows.Handle) error {
 		return err
 	}
 	return nil
+}
+
+func loadIconFromBytes(data []byte) (windows.Handle, error) {
+	if len(data) == 0 {
+		return 0, errors.New("empty icon data")
+	}
+
+	tmp, err := os.CreateTemp("", "rungrid_tray_*.ico")
+	if err != nil {
+		return 0, err
+	}
+	path := tmp.Name()
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(path)
+		return 0, err
+	}
+	_ = tmp.Close()
+	defer os.Remove(path)
+
+	ptr, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return 0, err
+	}
+
+	h, _, loadErr := procLoadImageW.Call(
+		0,
+		uintptr(unsafe.Pointer(ptr)),
+		imageIcon,
+		0,
+		0,
+		lrLoadFromFile,
+	)
+	if h == 0 {
+		return 0, loadErr
+	}
+	return windows.Handle(h), nil
 }
 
 func logError(ctx context.Context, msg string, err error) {
