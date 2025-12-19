@@ -39,7 +39,9 @@ function mapTypeToCategory(type: string): string {
     case 'doc':
       return 'docs';
     case 'url':
-      return 'apps';
+      return 'urls';
+    case 'system':
+      return 'system';
     case 'app':
     default:
       return 'apps';

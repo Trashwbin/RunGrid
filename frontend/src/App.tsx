@@ -335,8 +335,10 @@ function mapCategoryToType(categoryId: string): domain.ItemInput['type'] {
       return 'folder';
     case 'docs':
       return 'doc';
+    case 'urls':
+      return 'url';
     case 'system':
-      return 'app';
+      return 'system';
     case 'apps':
     default:
       return 'app';

@@ -6,6 +6,7 @@ export type IconName =
   | 'system'
   | 'docs'
   | 'folder'
+  | 'link'
   | 'plus'
   | 'heart';
 
@@ -27,7 +28,7 @@ export type MenuItem = {
 
 export type Accent = 'pink' | 'blue' | 'orange' | 'teal' | 'azure' | 'indigo';
 
-export type AppItemType = 'app' | 'doc' | 'folder' | 'url';
+export type AppItemType = 'app' | 'system' | 'doc' | 'folder' | 'url';
 
 export type AppItem = {
   id: string;
