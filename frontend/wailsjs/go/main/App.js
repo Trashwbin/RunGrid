@@ -42,8 +42,24 @@ export function OpenItemLocation(arg1) {
   return window['go']['main']['App']['OpenItemLocation'](arg1);
 }
 
+export function PickIconSource() {
+  return window['go']['main']['App']['PickIconSource']();
+}
+
 export function PickScanRoot() {
   return window['go']['main']['App']['PickScanRoot']();
+}
+
+export function PickTargetFolder() {
+  return window['go']['main']['App']['PickTargetFolder']();
+}
+
+export function PickTargetPath() {
+  return window['go']['main']['App']['PickTargetPath']();
+}
+
+export function PreviewIconFromSource(arg1) {
+  return window['go']['main']['App']['PreviewIconFromSource'](arg1);
 }
 
 export function RecordLaunch(arg1) {
@@ -72,4 +88,8 @@ export function UpdateGroup(arg1) {
 
 export function UpdateItem(arg1) {
   return window['go']['main']['App']['UpdateItem'](arg1);
+}
+
+export function UpdateItemIconFromSource(arg1, arg2) {
+  return window['go']['main']['App']['UpdateItemIconFromSource'](arg1, arg2);
 }

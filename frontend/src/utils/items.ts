@@ -28,7 +28,9 @@ export function toAppItem(item: domain.Item, index: number): AppItem {
     accent: accentPalette[index % accentPalette.length],
     glyph: makeGlyph(item.name),
     iconUrl: toIconURL(item.icon_path),
+    tags: item.tags ?? [],
     favorite: item.favorite,
+    hidden: item.hidden,
   };
 }
 

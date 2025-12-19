@@ -93,6 +93,45 @@ func (s *IconService) RefreshItem(ctx context.Context, id string) (domain.Item, 
 	return item, nil
 }
 
+func (s *IconService) UpdateFromSource(ctx context.Context, id string, source string) (domain.Item, error) {
+	if s.cache == nil {
+		return domain.Item{}, icon.ErrUnsupported
+	}
+	if strings.TrimSpace(id) == "" || strings.TrimSpace(source) == "" {
+		return domain.Item{}, storage.ErrInvalidInput
+	}
+
+	item, err := s.items.Get(ctx, id)
+	if err != nil {
+		return domain.Item{}, err
+	}
+
+	iconPath, err := s.cache.Ensure(ctx, source, true)
+	if err != nil {
+		return domain.Item{}, err
+	}
+	if iconPath == "" {
+		return domain.Item{}, storage.ErrInvalidInput
+	}
+
+	if err := s.items.SetIconPath(ctx, item.ID, iconPath); err != nil {
+		return domain.Item{}, err
+	}
+
+	item.IconPath = iconPath
+	return item, nil
+}
+
+func (s *IconService) PreviewFromSource(ctx context.Context, source string) (string, error) {
+	if s.cache == nil {
+		return "", icon.ErrUnsupported
+	}
+	if strings.TrimSpace(source) == "" {
+		return "", storage.ErrInvalidInput
+	}
+	return s.cache.Ensure(ctx, source, true)
+}
+
 func (s *IconService) SyncMissing(ctx context.Context) (int, error) {
 	return s.sync(ctx, false)
 }

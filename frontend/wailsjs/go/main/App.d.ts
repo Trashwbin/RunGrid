@@ -22,7 +22,15 @@ export function ListScanRoots():Promise<Array<string>>;
 
 export function OpenItemLocation(arg1:string):Promise<void>;
 
+export function PickIconSource():Promise<string>;
+
 export function PickScanRoot():Promise<string>;
+
+export function PickTargetFolder():Promise<string>;
+
+export function PickTargetPath():Promise<string>;
+
+export function PreviewIconFromSource(arg1:string):Promise<string>;
 
 export function RecordLaunch(arg1:string):Promise<domain.Item>;
 
@@ -37,3 +45,5 @@ export function SyncIcons():Promise<number>;
 export function UpdateGroup(arg1:domain.Group):Promise<domain.Group>;
 
 export function UpdateItem(arg1:domain.ItemUpdate):Promise<domain.Item>;
+
+export function UpdateItemIconFromSource(arg1:string,arg2:string):Promise<domain.Item>;

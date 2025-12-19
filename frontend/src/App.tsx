@@ -15,6 +15,8 @@ import {
   ScanShortcuts,
   SetFavorite,
   SyncIcons,
+  UpdateItem,
+  UpdateItemIconFromSource,
 } from '../wailsjs/go/main/App';
 import type {domain} from '../wailsjs/go/models';
 import {EventsOn} from '../wailsjs/runtime/runtime';
@@ -24,6 +26,7 @@ import {GroupTabs} from './components/layout/GroupTabs';
 import {SearchBar} from './components/layout/SearchBar';
 import {TopBar} from './components/layout/TopBar';
 import {ScanRootsEditor} from './components/scan/ScanRootsEditor';
+import {EditItemForm, type EditDraft} from './components/item/EditItemForm';
 import {ModalHost} from './components/overlay/ModalHost';
 import {ToastHost} from './components/overlay/ToastHost';
 import {ContextMenu} from './components/ui/ContextMenu';
@@ -42,6 +45,7 @@ function App() {
   const [scanRoots, setScanRoots] = useState<string[]>([]);
   const [scanRootsReady, setScanRootsReady] = useState(false);
   const scanRootsRef = useRef<string[]>([]);
+  const editDraftRef = useRef<EditDraft | null>(null);
   const notify = useToastStore((state) => state.notify);
   const openModal = useModalStore((state) => state.openModal);
   const closeModal = useModalStore((state) => state.closeModal);
@@ -383,6 +387,89 @@ function App() {
         return;
       }
 
+      if (actionId === 'edit') {
+        const initialDraft: EditDraft = {
+          id: current.id,
+          name: current.name,
+          path: current.path,
+          originalPath: current.path,
+          iconUrl: current.iconUrl,
+          glyph: current.glyph,
+          favorite: current.favorite,
+          hidden: current.hidden,
+        };
+        editDraftRef.current = initialDraft;
+        const modalId = openModal({
+          kind: 'form',
+          title: '编辑快捷方式',
+          description: '更新名称、目标路径或替换图标。',
+          size: 'lg',
+          primaryLabel: '保存',
+          secondaryLabel: '取消',
+          autoClose: false,
+          content: (
+            <EditItemForm
+              initialDraft={initialDraft}
+              onChange={(next) => {
+                editDraftRef.current = next;
+              }}
+            />
+          ),
+          onConfirm: async () => {
+            const draft = editDraftRef.current;
+            if (!draft) {
+              return;
+            }
+            const name = draft.name.trim();
+            const path = draft.path.trim();
+            if (!name || !path) {
+              notify({
+                type: 'warning',
+                title: '请补全信息',
+                message: '名称和目标路径不能为空。',
+              });
+              return;
+            }
+
+            try {
+              const pathChanged =
+                draft.originalPath.trim().toLowerCase() !== path.toLowerCase();
+              const updated = await UpdateItem({
+                id: draft.id,
+                name,
+                path,
+                type: pathChanged ? '' : current.type,
+                icon_path: '',
+                group_id: '',
+                tags: current.tags,
+                favorite: draft.favorite,
+                hidden: draft.hidden,
+              });
+
+              if (draft.iconSource) {
+                await UpdateItemIconFromSource(draft.id, draft.iconSource);
+              } else if (draft.originalPath !== path && updated.type !== 'url') {
+                try {
+                  await RefreshItemIcon(draft.id);
+                } catch {
+                }
+              }
+
+              await loadItems();
+              notify({type: 'success', title: '已更新', message: name});
+              closeModal(modalId);
+              editDraftRef.current = null;
+            } catch (err) {
+              showError(err instanceof Error ? err.message : '更新失败');
+            }
+          },
+          onCancel: () => {
+            editDraftRef.current = null;
+            closeModal(modalId);
+          },
+        });
+      }
+
       if (actionId === 'favorite') {
         try {
           await SetFavorite(current.id, !current.favorite);
@@ -435,7 +522,7 @@ function App() {
         });
       }
     },
-    [menuState.item, loadItems, notify, openModal, showError]
+    [menuState.item, loadItems, notify, openModal, showError, closeModal]
   );
 
   const menuItem = menuState.item;
@@ -474,6 +561,10 @@ function App() {
         x={menuState.x}
         y={menuState.y}
         items={[
+          {
+            id: 'edit',
+            label: '编辑',
+          },
           {
             id: 'favorite',
             label: menuItem?.favorite ? '取消收藏' : '收藏',
