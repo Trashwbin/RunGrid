@@ -1,9 +1,11 @@
 .app-shell {
   min-height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   padding: 18px 22px 16px;
   gap: 16px;
+  overflow: hidden;
 }
 
 .top-bar {
@@ -102,6 +104,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: 0; /* allow inner scroll areas to size */
+  overflow: hidden;
 }
 
 .category-bar {
@@ -175,6 +179,13 @@
   justify-content: center;
   background: var(--surface);
   border: 1px solid var(--outline);
+}
+
+.grid-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .app-grid {

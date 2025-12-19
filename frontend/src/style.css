@@ -23,6 +23,8 @@ body {
   background: radial-gradient(circle at 20% 20%, #2d3238 0%, #222427 48%, #1b1c1f 100%);
   color: var(--text-primary);
   min-height: 100vh;
+  height: 100vh;
+  overflow: hidden; /* prevent outer scroll; inner panes manage their own */
 }
 
 button,
@@ -46,4 +48,6 @@ textarea {
 
 #root {
   min-height: 100vh;
+  height: 100vh;
+  overflow: hidden; /* constrain scroll to app-shell */
 }

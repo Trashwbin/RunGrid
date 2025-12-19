@@ -262,14 +262,16 @@ function App() {
           onSelect={setActiveGroupId}
           onAdd={handleAddGroup}
         />
-        <AppGrid
-          items={filteredItems}
-          isLoading={isLoading}
-          error={error}
-          onAddItem={handleAddItem}
-          onLaunch={handleLaunch}
-          onOpenMenu={handleOpenMenu}
-        />
+        <div className="grid-scroll">
+          <AppGrid
+            items={filteredItems}
+            isLoading={isLoading}
+            error={error}
+            onAddItem={handleAddItem}
+            onLaunch={handleLaunch}
+            onOpenMenu={handleOpenMenu}
+          />
+        </div>
       </div>
       <SearchBar value={query} onChange={setQuery} />
       <ContextMenu
