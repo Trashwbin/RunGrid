@@ -20,6 +20,7 @@ type ItemRepository interface {
 	Create(ctx context.Context, item domain.Item) (domain.Item, error)
 	Update(ctx context.Context, item domain.Item) (domain.Item, error)
 	Delete(ctx context.Context, id string) error
+	Clear(ctx context.Context) (int, error)
 	IncrementLaunch(ctx context.Context, id string, usedAt time.Time) (domain.Item, error)
 }
 

@@ -2,6 +2,7 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import './App.css';
 import {categories, menuItems} from './data/mock';
 import {
+  ClearItems,
   CreateGroup,
   CreateItem,
   DeleteItem,
@@ -150,6 +151,25 @@ function App() {
           await loadItems();
         } catch (err) {
           setError(err instanceof Error ? err.message : '刷新图标失败');
+        } finally {
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      if (id === 'clear') {
+        const confirmed = window.confirm('确定要清空所有项目吗？');
+        if (!confirmed) {
+          return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+        try {
+          await ClearItems();
+          await loadItems();
+        } catch (err) {
+          setError(err instanceof Error ? err.message : '清空失败');
         } finally {
           setIsLoading(false);
         }

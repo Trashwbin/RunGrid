@@ -101,6 +101,10 @@ func (a *App) DeleteItem(id string) error {
 	return a.items.Delete(a.context(), id)
 }
 
+func (a *App) ClearItems() (int, error) {
+	return a.items.Clear(a.context())
+}
+
 func (a *App) RecordLaunch(id string) (domain.Item, error) {
 	return a.items.RecordLaunch(a.context(), id)
 }
