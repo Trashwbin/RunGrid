@@ -4,9 +4,12 @@ import {categories, menuItems} from './data/mock';
 import {
   CreateGroup,
   CreateItem,
+  DeleteItem,
   LaunchItem,
   ListGroups,
   ListItems,
+  OpenItemLocation,
+  RefreshItemIcon,
   ScanShortcuts,
   SetFavorite,
   SyncIcons,
@@ -206,9 +209,43 @@ function App() {
           setError(err instanceof Error ? err.message : '更新收藏失败');
         }
       }
+
+      if (actionId === 'open-location') {
+        try {
+          await OpenItemLocation(current.id);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : '无法打开所在目录');
+        }
+      }
+
+      if (actionId === 'refresh-icon') {
+        try {
+          await RefreshItemIcon(current.id);
+          await loadItems();
+        } catch (err) {
+          setError(err instanceof Error ? err.message : '刷新图标失败');
+        }
+      }
+
+      if (actionId === 'remove') {
+        const confirmed = window.confirm(`确定移除 "${current.name}" 吗？`);
+        if (!confirmed) {
+          return;
+        }
+        try {
+          await DeleteItem(current.id);
+          await loadItems();
+        } catch (err) {
+          setError(err instanceof Error ? err.message : '移除失败');
+        }
+      }
     },
     [menuState.item, loadItems]
   );
+
+  const menuItem = menuState.item;
+  const hasMenuPath = Boolean(menuItem?.path?.trim());
+  const isMenuWeb = menuItem ? isWebPath(menuItem.path) : false;
 
   return (
     <div className="app-shell">
@@ -242,7 +279,23 @@ function App() {
         items={[
           {
             id: 'favorite',
-            label: menuState.item?.favorite ? '取消收藏' : '收藏',
+            label: menuItem?.favorite ? '取消收藏' : '收藏',
+          },
+          {
+            id: 'open-location',
+            label: '打开所在目录',
+            disabled: !menuItem || !hasMenuPath || isMenuWeb,
+          },
+          {
+            id: 'refresh-icon',
+            label: '刷新图标',
+            disabled:
+              !menuItem || !hasMenuPath || menuItem.type === 'url' || isMenuWeb,
+          },
+          {
+            id: 'remove',
+            label: '移除',
+            tone: 'danger',
           },
         ]}
         onSelect={handleMenuAction}
@@ -266,4 +319,9 @@ function mapCategoryToType(categoryId: string): domain.ItemInput['type'] {
     default:
       return 'app';
   }
+}
+
+function isWebPath(path: string) {
+  const trimmed = path.trim().toLowerCase();
+  return trimmed.startsWith('http://') || trimmed.startsWith('https://');
 }

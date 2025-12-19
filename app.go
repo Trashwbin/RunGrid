@@ -115,11 +115,25 @@ func (a *App) SyncIcons() (int, error) {
 	return a.icons.RefreshAll(a.context())
 }
 
+func (a *App) RefreshItemIcon(id string) (domain.Item, error) {
+	if a.icons == nil {
+		return domain.Item{}, icon.ErrUnsupported
+	}
+	return a.icons.RefreshItem(a.context(), id)
+}
+
 func (a *App) LaunchItem(id string) (domain.Item, error) {
 	if a.launcher == nil {
 		return domain.Item{}, launcher.ErrUnsupported
 	}
 	return a.launcher.LaunchItem(a.context(), id)
+}
+
+func (a *App) OpenItemLocation(id string) error {
+	if a.launcher == nil {
+		return launcher.ErrUnsupported
+	}
+	return a.launcher.OpenItemLocation(a.context(), id)
 }
 
 func (a *App) SetFavorite(id string, favorite bool) (domain.Item, error) {

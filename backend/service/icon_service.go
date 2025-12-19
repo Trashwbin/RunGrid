@@ -54,6 +54,45 @@ func (s *IconService) EnsureForItem(ctx context.Context, item domain.Item) (doma
 	return item, nil
 }
 
+func (s *IconService) RefreshItem(ctx context.Context, id string) (domain.Item, error) {
+	if s.cache == nil {
+		return domain.Item{}, icon.ErrUnsupported
+	}
+	if strings.TrimSpace(id) == "" {
+		return domain.Item{}, storage.ErrInvalidInput
+	}
+
+	item, err := s.items.Get(ctx, id)
+	if err != nil {
+		return domain.Item{}, err
+	}
+
+	if item.Path == "" || item.Type == domain.ItemTypeURL {
+		return domain.Item{}, storage.ErrInvalidInput
+	}
+	if !filepath.IsAbs(item.Path) {
+		return domain.Item{}, storage.ErrInvalidInput
+	}
+	if strings.HasPrefix(strings.ToLower(item.Path), "http") {
+		return domain.Item{}, storage.ErrInvalidInput
+	}
+
+	iconPath, err := s.cache.Ensure(ctx, item.Path, true)
+	if err != nil {
+		return domain.Item{}, err
+	}
+	if iconPath == "" {
+		return domain.Item{}, storage.ErrInvalidInput
+	}
+
+	if err := s.items.SetIconPath(ctx, item.ID, iconPath); err != nil {
+		return domain.Item{}, err
+	}
+
+	item.IconPath = iconPath
+	return item, nil
+}
+
 func (s *IconService) SyncMissing(ctx context.Context) (int, error) {
 	return s.sync(ctx, false)
 }

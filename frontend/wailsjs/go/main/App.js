@@ -30,8 +30,16 @@ export function ListItems(arg1, arg2) {
   return window['go']['main']['App']['ListItems'](arg1, arg2);
 }
 
+export function OpenItemLocation(arg1) {
+  return window['go']['main']['App']['OpenItemLocation'](arg1);
+}
+
 export function RecordLaunch(arg1) {
   return window['go']['main']['App']['RecordLaunch'](arg1);
+}
+
+export function RefreshItemIcon(arg1) {
+  return window['go']['main']['App']['RefreshItemIcon'](arg1);
 }
 
 export function ScanShortcuts() {
