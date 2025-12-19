@@ -7,7 +7,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"time"
 
 	"rungrid/backend/domain"
 )
@@ -39,8 +41,23 @@ func DefaultRoots() []string {
 }
 
 func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
-	items := []domain.ItemInput{}
-	seen := map[string]struct{}{}
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	type dedupeCandidate struct {
+		item      domain.ItemInput
+		timestamp time.Time
+	}
+
+	candidates := map[string]dedupeCandidate{}
+	keys := []string{}
+	var resolver *shortcutResolver
+	var resolverErr error
+	defer func() {
+		if resolver != nil {
+			resolver.Close()
+		}
+	}()
 
 	for _, root := range s.Roots {
 		if root == "" {
@@ -71,11 +88,6 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 				return nil
 			}
 
-			if _, exists := seen[path]; exists {
-				return nil
-			}
-			seen[path] = struct{}{}
-
 			name := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
 			name = strings.TrimSpace(name)
 			if ext == ".lnk" {
@@ -87,7 +99,29 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 				name = entry.Name()
 			}
 
-			items = append(items, domain.ItemInput{
+			timestamp := time.Time{}
+			if latest, ok := latestFileTimestamp(path); ok {
+				timestamp = latest
+			} else if info, infoErr := entry.Info(); infoErr == nil {
+				timestamp = info.ModTime()
+			}
+
+			dedupeKey := strings.ToLower(path)
+			if ext == ".lnk" {
+				if resolver == nil && resolverErr == nil {
+					resolver, resolverErr = newShortcutResolver()
+				}
+				if resolver != nil {
+					target, args, err := resolver.Resolve(path)
+					if err == nil {
+						if shortcutKey := shortcutDedupeKey(target, args); shortcutKey != "" {
+							dedupeKey = shortcutKey
+						}
+					}
+				}
+			}
+
+			item := domain.ItemInput{
 				Name:     name,
 				Path:     path,
 				Type:     itemType,
@@ -96,13 +130,32 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 				Tags:     nil,
 				Favorite: false,
 				Hidden:   false,
-			})
+			}
+
+			if existing, ok := candidates[dedupeKey]; ok {
+				if timestamp.After(existing.timestamp) {
+					candidates[dedupeKey] = dedupeCandidate{item: item, timestamp: timestamp}
+				}
+				return nil
+			}
+
+			candidates[dedupeKey] = dedupeCandidate{item: item, timestamp: timestamp}
+			keys = append(keys, dedupeKey)
 
 			return nil
 		})
 		if walkErr != nil {
 			return nil, walkErr
 		}
+	}
+
+	items := make([]domain.ItemInput, 0, len(keys))
+	for _, key := range keys {
+		candidate, ok := candidates[key]
+		if !ok {
+			continue
+		}
+		items = append(items, candidate.item)
 	}
 
 	return items, nil
