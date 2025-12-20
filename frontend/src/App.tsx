@@ -2,6 +2,7 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import './App.css';
 import {categories, menuItems} from './data/mock';
 import {
+  ApplyHotkeys,
   ClearItems,
   CreateGroup,
   CreateItem,
@@ -19,7 +20,15 @@ import {
   UpdateItemIconFromSource,
 } from '../wailsjs/go/main/App';
 import type {domain} from '../wailsjs/go/models';
-import {EventsOn} from '../wailsjs/runtime/runtime';
+import {
+  EventsOn,
+  WindowHide,
+  WindowIsMaximised,
+  WindowIsMinimised,
+  WindowIsNormal,
+  WindowShow,
+  WindowUnminimise,
+} from '../wailsjs/runtime/runtime';
 import {AppGrid} from './components/grid/AppGrid';
 import {CategoryBar} from './components/layout/CategoryBar';
 import {GroupTabs} from './components/layout/GroupTabs';
@@ -34,7 +43,13 @@ import {ScrollArea} from './components/ui/ScrollArea';
 import {SettingsModal} from './components/settings/SettingsModal';
 import {useModalStore, useToastStore} from './store/overlays';
 import {toAppItem, toGroupTab} from './utils/items';
-import {loadHotkeys, saveHotkeys, type HotkeyConfig} from './utils/hotkeys';
+import {
+  HOTKEY_ACTIONS,
+  loadHotkeys,
+  saveHotkeys,
+  toHotkeyBindings,
+  type HotkeyConfig,
+} from './utils/hotkeys';
 import type {AppItem} from './types';
 
 function App() {
@@ -48,9 +63,11 @@ function App() {
   const [scanRoots, setScanRoots] = useState<string[]>([]);
   const [scanRootsReady, setScanRootsReady] = useState(false);
   const [iconVersion, setIconVersion] = useState(0);
+  const [isWindowHidden, setIsWindowHidden] = useState(false);
   const scanRootsRef = useRef<string[]>([]);
   const editDraftRef = useRef<EditDraft | null>(null);
   const hotkeyDraftRef = useRef<HotkeyConfig | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const notify = useToastStore((state) => state.notify);
   const openModal = useModalStore((state) => state.openModal);
   const closeModal = useModalStore((state) => state.closeModal);
@@ -84,17 +101,78 @@ function App() {
     setIconVersion((prev) => prev + 1);
   }, []);
 
+  const showWindow = useCallback(() => {
+    WindowShow();
+    try {
+      WindowUnminimise();
+    } catch {
+    }
+    setIsWindowHidden(false);
+  }, []);
+
+  const hideWindow = useCallback(() => {
+    WindowHide();
+    setIsWindowHidden(true);
+  }, []);
+
+  const hotkeyLabelMap = useMemo(() => {
+    const map = new Map<string, string>();
+    HOTKEY_ACTIONS.forEach((action) => {
+      map.set(action.id, action.label);
+    });
+    return map;
+  }, []);
+
+  const formatHotkeyIssues = useCallback(
+    (issues: Array<{id: string; keys: string; reason: string}>) => {
+      if (!issues.length) {
+        return '';
+      }
+      const lines = issues.slice(0, 3).map((issue) => {
+        const label = hotkeyLabelMap.get(issue.id) ?? issue.id;
+        const keys = issue.keys || '未设置';
+        return `${label}: ${keys}（${issue.reason}）`;
+      });
+      if (issues.length > 3) {
+        lines.push(`...另有 ${issues.length - 3} 项`);
+      }
+      return lines.join('\n');
+    },
+    [hotkeyLabelMap]
+  );
+
+  const applyHotkeys = useCallback(
+    async (config: HotkeyConfig) => {
+      try {
+        const result = await ApplyHotkeys(toHotkeyBindings(config));
+        if (result?.issues?.length) {
+          notify({
+            type: 'warning',
+            title: '快捷键注册失败',
+            message: formatHotkeyIssues(result.issues),
+          });
+        }
+      } catch (err) {
+        showError(
+          err instanceof Error ? err.message : '全局快捷键注册失败',
+          '快捷键注册失败'
+        );
+      }
+    },
+    [formatHotkeyIssues, notify, showError]
+  );
+
   useEffect(() => {
     const cached = window.localStorage.getItem('rungrid.scanRoots');
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed)) {
-        handleScanRootsChange(normalizeRoots(parsed));
-        setScanRootsReady(true);
-        return;
-      }
-    } catch {
+          handleScanRootsChange(normalizeRoots(parsed));
+          setScanRootsReady(true);
+          return;
+        }
+      } catch {
         window.localStorage.removeItem('rungrid.scanRoots');
       }
     }
@@ -159,6 +237,21 @@ function App() {
       off();
     };
   }, [loadItems, bumpIconVersion]);
+
+  useEffect(() => {
+    const off = EventsOn('window:show', () => {
+      setIsWindowHidden(false);
+    });
+    return () => {
+      off();
+    };
+  }, []);
+
+  useEffect(() => {
+    const stored = loadHotkeys();
+    hotkeyDraftRef.current = stored;
+    void applyHotkeys(stored);
+  }, [applyHotkeys]);
 
   const handleAddGroup = useCallback(async () => {
     const name = window.prompt('分组名称');
@@ -272,40 +365,45 @@ function App() {
     [closeModal, loadItems, notify, openModal, showError, updateModal]
   );
 
+  const openSettingsModal = useCallback(() => {
+    const initial = loadHotkeys();
+    hotkeyDraftRef.current = initial;
+    const modalId = openModal({
+      kind: 'form',
+      title: '设置',
+      description: '管理快捷键与偏好设置。',
+      size: 'lg',
+      primaryLabel: '保存',
+      secondaryLabel: '关闭',
+      autoClose: false,
+      content: (
+        <SettingsModal
+          initialHotkeys={initial}
+          onChange={(next) => {
+            hotkeyDraftRef.current = next;
+          }}
+        />
+      ),
+      onConfirm: async () => {
+        if (hotkeyDraftRef.current) {
+          saveHotkeys(hotkeyDraftRef.current);
+          await applyHotkeys(hotkeyDraftRef.current);
+        }
+        notify({type: 'success', title: '设置已保存'});
+        hotkeyDraftRef.current = null;
+        closeModal(modalId);
+      },
+      onCancel: () => {
+        hotkeyDraftRef.current = null;
+        closeModal(modalId);
+      },
+    });
+  }, [applyHotkeys, closeModal, notify, openModal]);
+
   const handleMenuSelect = useCallback(
     async (id: string) => {
       if (id === 'settings') {
-        const initial = loadHotkeys();
-        hotkeyDraftRef.current = initial;
-        const modalId = openModal({
-          kind: 'form',
-          title: '设置',
-          description: '管理快捷键与偏好设置。',
-          size: 'lg',
-          primaryLabel: '保存',
-          secondaryLabel: '关闭',
-          autoClose: false,
-          content: (
-            <SettingsModal
-              initialHotkeys={initial}
-              onChange={(next) => {
-                hotkeyDraftRef.current = next;
-              }}
-            />
-          ),
-          onConfirm: () => {
-            if (hotkeyDraftRef.current) {
-              saveHotkeys(hotkeyDraftRef.current);
-            }
-            notify({type: 'success', title: '设置已保存'});
-            hotkeyDraftRef.current = null;
-            closeModal(modalId);
-          },
-          onCancel: () => {
-            hotkeyDraftRef.current = null;
-            closeModal(modalId);
-          },
-        });
+        openSettingsModal();
         return;
       }
 
@@ -392,6 +490,7 @@ function App() {
       bumpIconVersion,
       loadItems,
       notify,
+      openSettingsModal,
       openModal,
       scanRoots,
       scanRootsReady,
@@ -399,6 +498,55 @@ function App() {
       startScan,
     ]
   );
+
+  const handleHotkeyTrigger = useCallback(
+    async (id: string) => {
+      if (id === 'toggle-app') {
+        if (isWindowHidden) {
+          showWindow();
+          return;
+        }
+        try {
+          const isMinimised = await WindowIsMinimised();
+          if (isMinimised) {
+            showWindow();
+            return;
+          }
+          const isNormal = await WindowIsNormal();
+          const isMaximised = await WindowIsMaximised();
+          if (isNormal || isMaximised) {
+            hideWindow();
+            return;
+          }
+        } catch {
+        }
+        showWindow();
+        return;
+      }
+
+      if (id === 'quick-search') {
+        showWindow();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
+      if (id === 'open-settings') {
+        showWindow();
+        openSettingsModal();
+      }
+    },
+    [hideWindow, isWindowHidden, openSettingsModal, showWindow]
+  );
+
+  useEffect(() => {
+    const off = EventsOn('hotkey:trigger', (payload: string) => {
+      void handleHotkeyTrigger(payload);
+    });
+    return () => {
+      off();
+    };
+  }, [handleHotkeyTrigger]);
 
   const handleLaunch = useCallback(
     async (id: string) => {
@@ -592,7 +740,12 @@ function App() {
 
   return (
     <div className="app-shell">
-      <TopBar title="RunGrid" menuItems={menuItems} onMenuSelect={handleMenuSelect} />
+      <TopBar
+        title="RunGrid"
+        menuItems={menuItems}
+        onMenuSelect={handleMenuSelect}
+        onHide={hideWindow}
+      />
       <div className="content">
         <CategoryBar
           categories={categories}
@@ -616,7 +769,7 @@ function App() {
           />
         </ScrollArea>
       </div>
-      <SearchBar value={query} onChange={setQuery} />
+      <SearchBar value={query} onChange={setQuery} inputRef={searchInputRef} />
       <ContextMenu
         open={menuState.open}
         x={menuState.x}
