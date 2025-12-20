@@ -57,7 +57,6 @@ func resolveShortcutIcon(path string) (shortcutIconInfo, error) {
 		return info, nil
 	}
 	defer shortcutVariant.Clear()
-	defer shortcut.Release()
 
 	iconLocation, _ := oleutil.GetProperty(shortcut, "IconLocation")
 	targetPath, _ := oleutil.GetProperty(shortcut, "TargetPath")
