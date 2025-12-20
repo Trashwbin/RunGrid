@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"rungrid/backend/domain"
 	"rungrid/backend/icon"
@@ -182,7 +183,13 @@ func (s *IconService) sync(ctx context.Context, force bool) (int, error) {
 		return 0, err
 	}
 
-	updated := 0
+	type iconTask struct {
+		source string
+		ids    []string
+	}
+
+	taskIndex := make(map[string]int)
+	tasks := make([]iconTask, 0)
 	for _, item := range items {
 		if !force && item.IconPath != "" {
 			continue
@@ -199,27 +206,101 @@ func (s *IconService) sync(ctx context.Context, force bool) (int, error) {
 			continue
 		}
 
-		iconPath, err := s.cache.Ensure(ctx, item.Path, force)
-		if err != nil {
-			if errors.Is(err, icon.ErrUnsupported) {
-				return updated, err
-			}
-			continue
-		}
-		if iconPath == "" {
+		key := strings.ToLower(strings.TrimSpace(item.Path))
+		if key == "" {
 			continue
 		}
 
-		if err := s.items.SetIconPath(ctx, item.ID, iconPath); err != nil {
-			if errors.Is(err, storage.ErrNotFound) {
-				continue
-			}
-			return updated, err
+		index, ok := taskIndex[key]
+		if !ok {
+			index = len(tasks)
+			taskIndex[key] = index
+			tasks = append(tasks, iconTask{source: item.Path})
 		}
-
-		item.IconPath = iconPath
-		updated++
+		tasks[index].ids = append(tasks[index].ids, item.ID)
 	}
 
-	return updated, nil
+	if len(tasks) == 0 {
+		return 0, nil
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	var updated int64
+	var once sync.Once
+	var firstErr error
+	setErr := func(err error) {
+		if err == nil {
+			return
+		}
+		once.Do(func() {
+			firstErr = err
+			cancel()
+		})
+	}
+
+	const workerCount = 5
+	taskCh := make(chan iconTask)
+	var wg sync.WaitGroup
+	wg.Add(workerCount)
+
+	for i := 0; i < workerCount; i++ {
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case task, ok := <-taskCh:
+					if !ok {
+						return
+					}
+					iconPath, err := s.cache.Ensure(ctx, task.source, force)
+					if err != nil {
+						if errors.Is(err, icon.ErrUnsupported) {
+							setErr(err)
+							return
+						}
+						continue
+					}
+					if iconPath == "" {
+						continue
+					}
+
+					for _, id := range task.ids {
+						if ctx.Err() != nil {
+							return
+						}
+						if err := s.items.SetIconPath(ctx, id, iconPath); err != nil {
+							if errors.Is(err, storage.ErrNotFound) {
+								continue
+							}
+							setErr(err)
+							return
+						}
+						atomic.AddInt64(&updated, 1)
+					}
+				}
+			}
+		}()
+	}
+
+	go func() {
+		defer close(taskCh)
+		for _, task := range tasks {
+			select {
+			case <-ctx.Done():
+				return
+			case taskCh <- task:
+			}
+		}
+	}()
+
+	wg.Wait()
+	if firstErr != nil {
+		return int(updated), firstErr
+	}
+
+	return int(updated), nil
 }
