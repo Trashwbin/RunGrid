@@ -45,6 +45,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [scanRoots, setScanRoots] = useState<string[]>([]);
   const [scanRootsReady, setScanRootsReady] = useState(false);
+  const [iconVersion, setIconVersion] = useState(0);
   const scanRootsRef = useRef<string[]>([]);
   const editDraftRef = useRef<EditDraft | null>(null);
   const notify = useToastStore((state) => state.notify);
@@ -74,6 +75,10 @@ function App() {
   const handleScanRootsChange = useCallback((next: string[]) => {
     setScanRoots(next);
     scanRootsRef.current = next;
+  }, []);
+
+  const bumpIconVersion = useCallback(() => {
+    setIconVersion((prev) => prev + 1);
   }, []);
 
   useEffect(() => {
@@ -145,11 +150,12 @@ function App() {
   useEffect(() => {
     const off = EventsOn('icons:updated', () => {
       loadItems();
+      bumpIconVersion();
     });
     return () => {
       off();
     };
-  }, [loadItems]);
+  }, [loadItems, bumpIconVersion]);
 
   const handleAddGroup = useCallback(async () => {
     const name = window.prompt('分组名称');
@@ -308,6 +314,7 @@ function App() {
         try {
           await SyncIcons();
           await loadItems();
+          bumpIconVersion();
           notify({type: 'success', title: '图标已刷新'});
         } catch (err) {
           showError(err instanceof Error ? err.message : '刷新图标失败', '刷新失败');
@@ -344,6 +351,7 @@ function App() {
     },
     [
       closeModal,
+      bumpIconVersion,
       loadItems,
       notify,
       openModal,
@@ -373,8 +381,8 @@ function App() {
   );
 
   const appItems = useMemo(
-    () => items.map((item, index) => toAppItem(item, index)),
-    [items]
+    () => items.map((item, index) => toAppItem(item, index, iconVersion)),
+    [items, iconVersion]
   );
 
   const filteredItems = useMemo(
@@ -455,17 +463,23 @@ function App() {
                 favorite: draft.favorite,
                 hidden: draft.hidden,
               });
+              let iconUpdated = false;
 
               if (draft.iconSource) {
                 await UpdateItemIconFromSource(draft.id, draft.iconSource);
+                iconUpdated = true;
               } else if (draft.originalPath !== path && updated.type !== 'url') {
                 try {
                   await RefreshItemIcon(draft.id);
+                  iconUpdated = true;
                 } catch {
                 }
               }
 
               await loadItems();
+              if (iconUpdated) {
+                bumpIconVersion();
+              }
               notify({type: 'success', title: '已更新', message: name});
               closeModal(modalId);
               editDraftRef.current = null;
@@ -506,6 +520,7 @@ function App() {
         try {
           await RefreshItemIcon(current.id);
           await loadItems();
+          bumpIconVersion();
           notify({type: 'success', title: '图标已刷新', message: current.name});
         } catch (err) {
           showError(err instanceof Error ? err.message : '刷新图标失败');
@@ -522,7 +537,15 @@ function App() {
         }
       }
     },
-    [menuState.item, loadItems, notify, openModal, showError, closeModal]
+    [
+      menuState.item,
+      loadItems,
+      notify,
+      openModal,
+      showError,
+      closeModal,
+      bumpIconVersion,
+    ]
   );
 
   const menuItem = menuState.item;
