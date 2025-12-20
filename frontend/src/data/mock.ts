@@ -9,6 +9,7 @@ export const categories: Category[] = [
 ];
 
 export const menuItems: MenuItem[] = [
+  {id: 'settings', label: '设置'},
   {id: 'scan', label: '扫描快捷方式'},
   {id: 'sync-icons', label: '刷新图标缓存'},
   {id: 'dedupe', label: '清理重复项'},

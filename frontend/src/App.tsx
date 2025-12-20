@@ -31,8 +31,10 @@ import {ModalHost} from './components/overlay/ModalHost';
 import {ToastHost} from './components/overlay/ToastHost';
 import {ContextMenu} from './components/ui/ContextMenu';
 import {ScrollArea} from './components/ui/ScrollArea';
+import {SettingsModal} from './components/settings/SettingsModal';
 import {useModalStore, useToastStore} from './store/overlays';
 import {toAppItem, toGroupTab} from './utils/items';
+import {loadHotkeys, saveHotkeys, type HotkeyConfig} from './utils/hotkeys';
 import type {AppItem} from './types';
 
 function App() {
@@ -48,6 +50,7 @@ function App() {
   const [iconVersion, setIconVersion] = useState(0);
   const scanRootsRef = useRef<string[]>([]);
   const editDraftRef = useRef<EditDraft | null>(null);
+  const hotkeyDraftRef = useRef<HotkeyConfig | null>(null);
   const notify = useToastStore((state) => state.notify);
   const openModal = useModalStore((state) => state.openModal);
   const closeModal = useModalStore((state) => state.closeModal);
@@ -271,6 +274,41 @@ function App() {
 
   const handleMenuSelect = useCallback(
     async (id: string) => {
+      if (id === 'settings') {
+        const initial = loadHotkeys();
+        hotkeyDraftRef.current = initial;
+        const modalId = openModal({
+          kind: 'form',
+          title: '设置',
+          description: '管理快捷键与偏好设置。',
+          size: 'lg',
+          primaryLabel: '保存',
+          secondaryLabel: '关闭',
+          autoClose: false,
+          content: (
+            <SettingsModal
+              initialHotkeys={initial}
+              onChange={(next) => {
+                hotkeyDraftRef.current = next;
+              }}
+            />
+          ),
+          onConfirm: () => {
+            if (hotkeyDraftRef.current) {
+              saveHotkeys(hotkeyDraftRef.current);
+            }
+            notify({type: 'success', title: '设置已保存'});
+            hotkeyDraftRef.current = null;
+            closeModal(modalId);
+          },
+          onCancel: () => {
+            hotkeyDraftRef.current = null;
+            closeModal(modalId);
+          },
+        });
+        return;
+      }
+
       if (id === 'scan') {
         if (!scanRootsReady) {
           notify({
