@@ -52,7 +52,7 @@ func NewApp() (*App, error) {
 	groupService := service.NewGroupService(groupRepo)
 
 	iconRoot := filepath.Join(filepath.Dir(dbPath), "icons")
-	iconCache := icon.NewCache(iconRoot, icon.NewDefaultExtractor())
+	iconCache := icon.NewCache(iconRoot, icon.NewHybridExtractor())
 	iconService := service.NewIconService(iconCache, itemService)
 	app := &App{
 		items:    itemService,

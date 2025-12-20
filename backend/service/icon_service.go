@@ -5,6 +5,7 @@ import (
 	"errors"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"rungrid/backend/domain"
 	"rungrid/backend/icon"
@@ -12,8 +13,11 @@ import (
 )
 
 type IconService struct {
-	cache *icon.Cache
-	items *ItemService
+	cache  *icon.Cache
+	items  *ItemService
+	mu     sync.Mutex
+	busy   bool
+	notify func()
 }
 
 func NewIconService(cache *icon.Cache, items *ItemService) *IconService {
@@ -134,6 +138,34 @@ func (s *IconService) PreviewFromSource(ctx context.Context, source string) (str
 
 func (s *IconService) SyncMissing(ctx context.Context) (int, error) {
 	return s.sync(ctx, false)
+}
+
+func (s *IconService) SyncMissingAsync(onDone func()) {
+	if s.cache == nil {
+		return
+	}
+	s.mu.Lock()
+	if onDone != nil {
+		s.notify = onDone
+	}
+	if s.busy {
+		s.mu.Unlock()
+		return
+	}
+	s.busy = true
+	s.mu.Unlock()
+
+	go func() {
+		_, _ = s.sync(context.Background(), false)
+		s.mu.Lock()
+		notify := s.notify
+		s.notify = nil
+		s.busy = false
+		s.mu.Unlock()
+		if notify != nil {
+			notify()
+		}
+	}()
 }
 
 func (s *IconService) RefreshAll(ctx context.Context) (int, error) {

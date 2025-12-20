@@ -142,6 +142,15 @@ function App() {
     loadItems();
   }, [loadItems]);
 
+  useEffect(() => {
+    const off = EventsOn('icons:updated', () => {
+      loadItems();
+    });
+    return () => {
+      off();
+    };
+  }, [loadItems]);
+
   const handleAddGroup = useCallback(async () => {
     const name = window.prompt('分组名称');
     if (!name) {
