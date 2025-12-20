@@ -17,7 +17,11 @@ export function toGroupTab(group: domain.Group): GroupTab {
   };
 }
 
-export function toAppItem(item: domain.Item, index: number): AppItem {
+export function toAppItem(
+  item: domain.Item,
+  index: number,
+  iconVersion?: number
+): AppItem {
   return {
     id: item.id,
     name: item.name,
@@ -27,7 +31,7 @@ export function toAppItem(item: domain.Item, index: number): AppItem {
     path: item.path,
     accent: accentPalette[index % accentPalette.length],
     glyph: makeGlyph(item.name),
-    iconUrl: toIconURL(item.icon_path),
+    iconUrl: toIconURL(item.icon_path, iconVersion),
     tags: item.tags ?? [],
     favorite: item.favorite,
     hidden: item.hidden,
@@ -64,7 +68,10 @@ function makeGlyph(name: string): string {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
-function toIconURL(path: string | undefined): string | undefined {
+function toIconURL(
+  path: string | undefined,
+  version?: number
+): string | undefined {
   if (!path) {
     return undefined;
   }
@@ -75,5 +82,6 @@ function toIconURL(path: string | undefined): string | undefined {
     return undefined;
   }
 
-  return `/icons/${encodeURIComponent(fileName)}`;
+  const suffix = version ? `?v=${version}` : '';
+  return `/icons/${encodeURIComponent(fileName)}${suffix}`;
 }

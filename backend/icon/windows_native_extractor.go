@@ -174,15 +174,26 @@ func saveIconPNG(icon windows.Handle, size int, dest string) error {
 	copy(data, pixels)
 
 	img := image.NewRGBA(image.Rect(0, 0, size, size))
+	hasAlpha := false
 	for i := 0; i+3 < len(data); i += 4 {
 		b := data[i]
 		g := data[i+1]
 		r := data[i+2]
 		a := data[i+3]
+		if a != 0 {
+			hasAlpha = true
+		}
 		img.Pix[i] = r
 		img.Pix[i+1] = g
 		img.Pix[i+2] = b
 		img.Pix[i+3] = a
+	}
+	if !hasAlpha {
+		if err := applyIconMaskAlpha(icon, size, img); err != nil {
+			for i := 3; i < len(img.Pix); i += 4 {
+				img.Pix[i] = 0xFF
+			}
+		}
 	}
 
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
@@ -209,8 +220,9 @@ func destroyIcon(icon windows.Handle) {
 }
 
 const (
-	biRGB    = 0
-	diNormal = 0x0003
+	biRGB        = 0
+	diNormal     = 0x0003
+	dibRGBColors = 0
 )
 
 type bitmapInfoHeader struct {
@@ -232,16 +244,102 @@ type bitmapInfo struct {
 	Colors [1]uint32
 }
 
+type bitmapInfo1bpp struct {
+	Header bitmapInfoHeader
+	Colors [2]uint32
+}
+
+type iconInfo struct {
+	IsIcon   int32
+	HotspotX uint32
+	HotspotY uint32
+	Mask     windows.Handle
+	Color    windows.Handle
+}
+
+func applyIconMaskAlpha(icon windows.Handle, size int, img *image.RGBA) error {
+	var info iconInfo
+	ret, _, err := procGetIconInfo.Call(
+		uintptr(icon),
+		uintptr(unsafe.Pointer(&info)),
+	)
+	if ret == 0 {
+		return err
+	}
+	if info.Mask != 0 {
+		defer procDeleteObject.Call(uintptr(info.Mask))
+	}
+	if info.Color != 0 {
+		defer procDeleteObject.Call(uintptr(info.Color))
+	}
+	if info.Mask == 0 {
+		return fmt.Errorf("icon mask unavailable")
+	}
+
+	hdc, _, err := procCreateCompatibleDC.Call(0)
+	if hdc == 0 {
+		return err
+	}
+	defer procDeleteDC.Call(hdc)
+
+	maskInfo := bitmapInfo1bpp{
+		Header: bitmapInfoHeader{
+			Size:        uint32(unsafe.Sizeof(bitmapInfoHeader{})),
+			Width:       int32(size),
+			Height:      -int32(size),
+			Planes:      1,
+			BitCount:    1,
+			Compression: biRGB,
+		},
+	}
+	stride := ((size + 31) / 32) * 4
+	buffer := make([]byte, stride*size)
+	if len(buffer) == 0 {
+		return fmt.Errorf("empty mask buffer")
+	}
+	ret, _, err = procGetDIBits.Call(
+		hdc,
+		uintptr(info.Mask),
+		0,
+		uintptr(size),
+		uintptr(unsafe.Pointer(&buffer[0])),
+		uintptr(unsafe.Pointer(&maskInfo)),
+		dibRGBColors,
+	)
+	if ret == 0 {
+		return err
+	}
+
+	for y := 0; y < size; y++ {
+		row := y * stride
+		for x := 0; x < size; x++ {
+			byteIndex := row + (x / 8)
+			bit := 7 - (x % 8)
+			maskBit := (buffer[byteIndex] >> bit) & 1
+			idx := y*img.Stride + x*4 + 3
+			if maskBit == 1 {
+				img.Pix[idx] = 0
+			} else {
+				img.Pix[idx] = 0xFF
+			}
+		}
+	}
+
+	return nil
+}
+
 var (
 	modShell32               = windows.NewLazySystemDLL("shell32.dll")
 	procSHDefExtractIconW    = modShell32.NewProc("SHDefExtractIconW")
 	modUser32                = windows.NewLazySystemDLL("user32.dll")
 	procPrivateExtractIconsW = modUser32.NewProc("PrivateExtractIconsW")
 	procDestroyIcon          = modUser32.NewProc("DestroyIcon")
+	procGetIconInfo          = modUser32.NewProc("GetIconInfo")
 	procDrawIconEx           = modUser32.NewProc("DrawIconEx")
 	modGdi32                 = windows.NewLazySystemDLL("gdi32.dll")
 	procCreateCompatibleDC   = modGdi32.NewProc("CreateCompatibleDC")
 	procCreateDIBSection     = modGdi32.NewProc("CreateDIBSection")
+	procGetDIBits            = modGdi32.NewProc("GetDIBits")
 	procSelectObject         = modGdi32.NewProc("SelectObject")
 	procDeleteObject         = modGdi32.NewProc("DeleteObject")
 	procDeleteDC             = modGdi32.NewProc("DeleteDC")
