@@ -10,9 +10,10 @@ type TopBarProps = {
   title: string;
   menuItems: MenuItem[];
   onMenuSelect?: (id: string) => void;
+  onHide?: () => void;
 };
 
-export function TopBar({title, menuItems, onMenuSelect}: TopBarProps) {
+export function TopBar({title, menuItems, onMenuSelect, onHide}: TopBarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -31,8 +32,12 @@ export function TopBar({title, menuItems, onMenuSelect}: TopBarProps) {
   );
 
   const handleClose = useCallback(() => {
+    if (onHide) {
+      onHide();
+      return;
+    }
     WindowHide();
-  }, []);
+  }, [onHide]);
 
   return (
     <header className="top-bar">
@@ -47,7 +52,11 @@ export function TopBar({title, menuItems, onMenuSelect}: TopBarProps) {
           isActive={menuOpen}
           onClick={handleMenuToggle}
         />
-        <IconButton label="隐藏到托盘" icon={<Icon name="close" />} onClick={handleClose} />
+        <IconButton
+          label="隐藏到托盘"
+          icon={<Icon name="close" />}
+          onClick={handleClose}
+        />
         <DropdownMenu
           open={menuOpen}
           items={menuItems}

@@ -161,6 +161,7 @@ func (t *trayController) showMainWindow() {
 	}
 	wailsRuntime.WindowShow(t.ctx)
 	wailsRuntime.WindowUnminimise(t.ctx)
+	wailsRuntime.EventsEmit(t.ctx, "window:show")
 }
 
 func (t *trayController) handleCommand(id uint16) {
