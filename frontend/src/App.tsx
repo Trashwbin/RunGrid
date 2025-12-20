@@ -67,7 +67,6 @@ function App() {
   const scanRootsRef = useRef<string[]>([]);
   const editDraftRef = useRef<EditDraft | null>(null);
   const hotkeyDraftRef = useRef<HotkeyConfig | null>(null);
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const notify = useToastStore((state) => state.notify);
   const openModal = useModalStore((state) => state.openModal);
   const closeModal = useModalStore((state) => state.closeModal);
@@ -524,19 +523,9 @@ function App() {
         return;
       }
 
-      if (id === 'quick-search') {
-        showWindow();
-        searchInputRef.current?.focus();
-        searchInputRef.current?.select();
-        return;
-      }
-
-      if (id === 'open-settings') {
-        showWindow();
-        openSettingsModal();
-      }
+      return;
     },
-    [hideWindow, isWindowHidden, openSettingsModal, showWindow]
+    [hideWindow, isWindowHidden, showWindow]
   );
 
   useEffect(() => {
@@ -769,7 +758,7 @@ function App() {
           />
         </ScrollArea>
       </div>
-      <SearchBar value={query} onChange={setQuery} inputRef={searchInputRef} />
+      <SearchBar value={query} onChange={setQuery} />
       <ContextMenu
         open={menuState.open}
         x={menuState.x}
