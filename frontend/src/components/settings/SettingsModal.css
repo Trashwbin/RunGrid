@@ -187,11 +187,6 @@
   border-color: var(--outline-strong);
 }
 
-.settings-footnote {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
 .settings-placeholder {
   padding: 32px;
   border-radius: 16px;

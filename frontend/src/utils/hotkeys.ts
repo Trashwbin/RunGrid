@@ -1,12 +1,24 @@
 export type HotkeyConfig = Record<string, string>;
 
+export type HotkeyAction = {
+  id: string;
+  label: string;
+  description: string;
+};
+
 const STORAGE_KEY = 'rungrid.hotkeys';
 
 export const DEFAULT_HOTKEYS: HotkeyConfig = {
   'toggle-app': 'Alt+Space',
-  'quick-search': 'Alt+F',
-  'open-settings': 'Ctrl+,',
 };
+
+export const HOTKEY_ACTIONS: HotkeyAction[] = [
+  {
+    id: 'toggle-app',
+    label: '唤出/隐藏主窗口',
+    description: '快速显示或隐藏 RunGrid。',
+  },
+];
 
 export function loadHotkeys(): HotkeyConfig {
   const next = {...DEFAULT_HOTKEYS};
@@ -31,4 +43,11 @@ export function loadHotkeys(): HotkeyConfig {
 
 export function saveHotkeys(value: HotkeyConfig) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+}
+
+export function toHotkeyBindings(config: HotkeyConfig) {
+  return HOTKEY_ACTIONS.map((action) => ({
+    id: action.id,
+    keys: config[action.id] ?? '',
+  }));
 }

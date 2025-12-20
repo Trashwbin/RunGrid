@@ -1,6 +1,10 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {ScrollArea} from '../ui/ScrollArea';
-import {DEFAULT_HOTKEYS, type HotkeyConfig} from '../../utils/hotkeys';
+import {
+  DEFAULT_HOTKEYS,
+  HOTKEY_ACTIONS,
+  type HotkeyConfig,
+} from '../../utils/hotkeys';
 import './SettingsModal.css';
 
 type SettingsModalProps = {
@@ -16,24 +20,6 @@ const tabs: {id: TabId; label: string}[] = [
   {id: 'hotkeys', label: '快捷键'},
   {id: 'storage', label: '数据存储'},
   {id: 'vip', label: '我的会员'},
-];
-
-const hotkeyActions = [
-  {
-    id: 'toggle-app',
-    label: '唤出/隐藏主窗口',
-    description: '快速显示或隐藏 RunGrid。',
-  },
-  {
-    id: 'quick-search',
-    label: '聚焦搜索框',
-    description: '在任意界面聚焦搜索输入。',
-  },
-  {
-    id: 'open-settings',
-    label: '打开设置面板',
-    description: '快速打开设置窗口。',
-  },
 ];
 
 const modifierKeys = new Set(['Shift', 'Control', 'Alt', 'Meta']);
@@ -119,7 +105,7 @@ export function SettingsModal({initialHotkeys, onChange}: SettingsModalProps) {
             contentClassName="settings-hotkey-scroll__content"
           >
             <div className="hotkey-list">
-              {hotkeyActions.map((action) => {
+              {HOTKEY_ACTIONS.map((action) => {
                 const value = hotkeys[action.id];
                 const isRecording = recordingId === action.id;
                 return (
@@ -151,9 +137,6 @@ export function SettingsModal({initialHotkeys, onChange}: SettingsModalProps) {
               })}
             </div>
           </ScrollArea>
-          <div className="settings-footnote">
-            当前仅保存热键配置，实际全局热键将在后续接入。
-          </div>
         </div>
       );
     }
