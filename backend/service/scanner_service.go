@@ -92,7 +92,9 @@ func (s *ScannerService) scan(ctx context.Context, roots []string) (domain.ScanR
 	}
 
 	if s.icons != nil {
-		_, _ = s.icons.SyncMissing(ctx)
+		s.icons.SyncMissingAsync(func() {
+			runtime.EventsEmit(ctx, "icons:updated")
+		})
 	}
 
 	return result, nil
