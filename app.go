@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"rungrid/backend/domain"
+	"rungrid/backend/hotkey"
 	"rungrid/backend/icon"
 	"rungrid/backend/launcher"
 	"rungrid/backend/scanner"
@@ -25,6 +26,7 @@ type App struct {
 	icons    *service.IconService
 	scanner  *service.ScannerService
 	launcher *service.LauncherService
+	hotkeys  *hotkey.Manager
 	closeFn  func() error
 }
 
@@ -54,12 +56,14 @@ func NewApp() (*App, error) {
 	iconRoot := filepath.Join(filepath.Dir(dbPath), "icons")
 	iconCache := icon.NewCache(iconRoot, icon.NewHybridExtractor())
 	iconService := service.NewIconService(iconCache, itemService)
+	hotkeyManager := hotkey.NewManager()
 	app := &App{
 		items:    itemService,
 		groups:   groupService,
 		icons:    iconService,
 		scanner:  service.NewScannerService(scanner.NewDefaultScanner(), itemService, iconService),
 		launcher: service.NewLauncherService(launcher.NewDefaultLauncher(), itemService),
+		hotkeys:  hotkeyManager,
 		closeFn:  db.Close,
 	}
 
@@ -78,11 +82,17 @@ func NewApp() (*App, error) {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	globalTray.start(ctx)
+	if a.hotkeys != nil {
+		a.hotkeys.Start(ctx)
+	}
 }
 
 // shutdown is called when the app is terminating.
 func (a *App) shutdown(ctx context.Context) {
 	globalTray.stop()
+	if a.hotkeys != nil {
+		a.hotkeys.Stop()
+	}
 	if a.closeFn != nil {
 		_ = a.closeFn()
 	}
@@ -214,6 +224,19 @@ func (a *App) OpenItemLocation(id string) error {
 
 func (a *App) SetFavorite(id string, favorite bool) (domain.Item, error) {
 	return a.items.SetFavorite(a.context(), id, favorite)
+}
+
+func (a *App) ApplyHotkeys(bindings []domain.HotkeyBinding) (domain.HotkeyApplyResult, error) {
+	if a.hotkeys == nil {
+		return domain.HotkeyApplyResult{}, hotkey.ErrUnsupported
+	}
+
+	issues, err := a.hotkeys.Apply(bindings)
+	if err != nil {
+		return domain.HotkeyApplyResult{}, err
+	}
+
+	return domain.HotkeyApplyResult{Issues: issues}, nil
 }
 
 func (a *App) ListGroups() ([]domain.Group, error) {
