@@ -5,11 +5,17 @@ import {
   HOTKEY_ACTIONS,
   type HotkeyConfig,
 } from '../../utils/hotkeys';
+import {
+  DEFAULT_PREFERENCES,
+  type Preferences,
+} from '../../utils/preferences';
 import './SettingsModal.css';
 
 type SettingsModalProps = {
   initialHotkeys: HotkeyConfig;
   onChange: (next: HotkeyConfig) => void;
+  initialPreferences: Preferences;
+  onPreferencesChange: (next: Preferences) => void;
 };
 
 type TabId = 'general' | 'scan' | 'hotkeys' | 'storage' | 'vip';
@@ -24,11 +30,20 @@ const tabs: {id: TabId; label: string}[] = [
 
 const modifierKeys = new Set(['Shift', 'Control', 'Alt', 'Meta']);
 
-export function SettingsModal({initialHotkeys, onChange}: SettingsModalProps) {
+export function SettingsModal({
+  initialHotkeys,
+  onChange,
+  initialPreferences,
+  onPreferencesChange,
+}: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('hotkeys');
   const [hotkeys, setHotkeys] = useState<HotkeyConfig>({
     ...DEFAULT_HOTKEYS,
     ...initialHotkeys,
+  });
+  const [preferences, setPreferences] = useState<Preferences>({
+    ...DEFAULT_PREFERENCES,
+    ...initialPreferences,
   });
   const [recordingId, setRecordingId] = useState<string | null>(null);
 
@@ -37,8 +52,16 @@ export function SettingsModal({initialHotkeys, onChange}: SettingsModalProps) {
   }, [initialHotkeys]);
 
   useEffect(() => {
+    setPreferences({...DEFAULT_PREFERENCES, ...initialPreferences});
+  }, [initialPreferences]);
+
+  useEffect(() => {
     onChange(hotkeys);
   }, [hotkeys, onChange]);
+
+  useEffect(() => {
+    onPreferencesChange(preferences);
+  }, [onPreferencesChange, preferences]);
 
   useEffect(() => {
     if (!recordingId) {
@@ -79,6 +102,44 @@ export function SettingsModal({initialHotkeys, onChange}: SettingsModalProps) {
   }, []);
 
   const activeContent = useMemo(() => {
+    if (activeTab === 'general') {
+      return (
+        <div className="settings-general">
+          <div className="settings-section-header">
+            <div>
+              <h3 className="settings-section-title">通用设置</h3>
+              <p className="settings-section-desc">
+                控制唤出面板时的默认交互。
+              </p>
+            </div>
+          </div>
+          <div className="settings-option">
+            <div className="settings-option-info">
+              <div className="settings-option-title">唤出时聚焦搜索框</div>
+              <div className="settings-option-desc">
+                显示面板后自动定位到搜索输入框。
+              </div>
+            </div>
+            <label className="settings-switch" aria-label="唤出时聚焦搜索框">
+              <input
+                type="checkbox"
+                checked={preferences.focusSearchOnShow}
+                onChange={() =>
+                  setPreferences((prev) => ({
+                    ...prev,
+                    focusSearchOnShow: !prev.focusSearchOnShow,
+                  }))
+                }
+              />
+              <span className="settings-switch-track">
+                <span className="settings-switch-thumb" />
+              </span>
+            </label>
+          </div>
+        </div>
+      );
+    }
+
     if (activeTab === 'hotkeys') {
       return (
         <div className="settings-hotkeys">
@@ -147,7 +208,15 @@ export function SettingsModal({initialHotkeys, onChange}: SettingsModalProps) {
         <p className="settings-placeholder-desc">这一模块正在打磨中。</p>
       </div>
     );
-  }, [activeTab, handleClear, handleRecord, handleReset, hotkeys, recordingId]);
+  }, [
+    activeTab,
+    handleClear,
+    handleRecord,
+    handleReset,
+    hotkeys,
+    recordingId,
+    preferences,
+  ]);
 
   return (
     <div className="settings-modal">

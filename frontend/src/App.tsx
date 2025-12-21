@@ -50,6 +50,11 @@ import {
   toHotkeyBindings,
   type HotkeyConfig,
 } from './utils/hotkeys';
+import {
+  loadPreferences,
+  savePreferences,
+  type Preferences,
+} from './utils/preferences';
 import type {AppItem} from './types';
 
 function App() {
@@ -64,9 +69,14 @@ function App() {
   const [scanRootsReady, setScanRootsReady] = useState(false);
   const [iconVersion, setIconVersion] = useState(0);
   const [isWindowHidden, setIsWindowHidden] = useState(false);
+  const [preferences, setPreferences] = useState<Preferences>(() =>
+    loadPreferences()
+  );
   const scanRootsRef = useRef<string[]>([]);
   const editDraftRef = useRef<EditDraft | null>(null);
   const hotkeyDraftRef = useRef<HotkeyConfig | null>(null);
+  const preferenceDraftRef = useRef<Preferences | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const notify = useToastStore((state) => state.notify);
   const openModal = useModalStore((state) => state.openModal);
   const closeModal = useModalStore((state) => state.closeModal);
@@ -107,7 +117,13 @@ function App() {
     } catch {
     }
     setIsWindowHidden(false);
-  }, []);
+    if (preferences.focusSearchOnShow) {
+      window.requestAnimationFrame(() => {
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      });
+    }
+  }, [preferences.focusSearchOnShow]);
 
   const hideWindow = useCallback(() => {
     WindowHide();
@@ -240,11 +256,17 @@ function App() {
   useEffect(() => {
     const off = EventsOn('window:show', () => {
       setIsWindowHidden(false);
+      if (preferences.focusSearchOnShow) {
+        window.requestAnimationFrame(() => {
+          searchInputRef.current?.focus();
+          searchInputRef.current?.select();
+        });
+      }
     });
     return () => {
       off();
     };
-  }, []);
+  }, [preferences.focusSearchOnShow]);
 
   useEffect(() => {
     const stored = loadHotkeys();
@@ -366,7 +388,9 @@ function App() {
 
   const openSettingsModal = useCallback(() => {
     const initial = loadHotkeys();
+    const initialPreferences = preferences;
     hotkeyDraftRef.current = initial;
+    preferenceDraftRef.current = initialPreferences;
     const modalId = openModal({
       kind: 'form',
       title: '设置',
@@ -378,8 +402,12 @@ function App() {
       content: (
         <SettingsModal
           initialHotkeys={initial}
+          initialPreferences={initialPreferences}
           onChange={(next) => {
             hotkeyDraftRef.current = next;
+          }}
+          onPreferencesChange={(next) => {
+            preferenceDraftRef.current = next;
           }}
         />
       ),
@@ -388,16 +416,22 @@ function App() {
           saveHotkeys(hotkeyDraftRef.current);
           await applyHotkeys(hotkeyDraftRef.current);
         }
+        if (preferenceDraftRef.current) {
+          savePreferences(preferenceDraftRef.current);
+          setPreferences(preferenceDraftRef.current);
+        }
         notify({type: 'success', title: '设置已保存'});
         hotkeyDraftRef.current = null;
+        preferenceDraftRef.current = null;
         closeModal(modalId);
       },
       onCancel: () => {
         hotkeyDraftRef.current = null;
+        preferenceDraftRef.current = null;
         closeModal(modalId);
       },
     });
-  }, [applyHotkeys, closeModal, notify, openModal]);
+  }, [applyHotkeys, closeModal, notify, openModal, preferences]);
 
   const handleMenuSelect = useCallback(
     async (id: string) => {
@@ -758,7 +792,7 @@ function App() {
           />
         </ScrollArea>
       </div>
-      <SearchBar value={query} onChange={setQuery} />
+      <SearchBar value={query} onChange={setQuery} inputRef={searchInputRef} />
       <ContextMenu
         open={menuState.open}
         x={menuState.x}
