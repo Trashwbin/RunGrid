@@ -1,12 +1,13 @@
-import type {ChangeEvent} from 'react';
+import type {ChangeEvent, Ref} from 'react';
 import {Icon} from '../ui/Icon';
 
 type SearchBarProps = {
   value: string;
   onChange: (value: string) => void;
+  inputRef?: Ref<HTMLInputElement>;
 };
 
-export function SearchBar({value, onChange}: SearchBarProps) {
+export function SearchBar({value, onChange, inputRef}: SearchBarProps) {
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.value);
   };
@@ -14,6 +15,7 @@ export function SearchBar({value, onChange}: SearchBarProps) {
   return (
     <div className="search-bar">
       <input
+        ref={inputRef}
         type="search"
         placeholder="快速搜索"
         value={value}
