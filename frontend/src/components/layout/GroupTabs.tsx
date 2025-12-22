@@ -6,9 +6,16 @@ type GroupTabsProps = {
   activeId: string;
   onSelect: (id: string) => void;
   onAdd?: () => void;
+  onOpenMenu?: (id: string, x: number, y: number) => void;
 };
 
-export function GroupTabs({tabs, activeId, onSelect, onAdd}: GroupTabsProps) {
+export function GroupTabs({
+  tabs,
+  activeId,
+  onSelect,
+  onAdd,
+  onOpenMenu,
+}: GroupTabsProps) {
   return (
     <div className="group-tabs">
       {tabs.map((tab) => (
@@ -17,6 +24,13 @@ export function GroupTabs({tabs, activeId, onSelect, onAdd}: GroupTabsProps) {
           type="button"
           className={`group-tab${activeId === tab.id ? ' is-active' : ''}`}
           onClick={() => onSelect(tab.id)}
+          onContextMenu={(event) => {
+            if (!onOpenMenu || tab.id === 'all') {
+              return;
+            }
+            event.preventDefault();
+            onOpenMenu(tab.id, event.clientX, event.clientY);
+          }}
         >
           {tab.icon ? <Icon name={tab.icon} size={14} /> : null}
           <span>{tab.label}</span>
