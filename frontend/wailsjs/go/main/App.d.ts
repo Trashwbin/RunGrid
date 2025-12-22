@@ -14,6 +14,8 @@ export function DeleteGroup(arg1:string):Promise<void>;
 
 export function DeleteItem(arg1:string):Promise<void>;
 
+export function GetCursorAnchorPosition(arg1:number,arg2:number):Promise<domain.Point>;
+
 export function LaunchItem(arg1:string):Promise<domain.Item>;
 
 export function ListGroups():Promise<Array<domain.Group>>;

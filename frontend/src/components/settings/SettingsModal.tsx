@@ -7,6 +7,7 @@ import {
 } from '../../utils/hotkeys';
 import {
   DEFAULT_PREFERENCES,
+  type PanelPositionMode,
   type Preferences,
 } from '../../utils/preferences';
 import './SettingsModal.css';
@@ -29,6 +30,11 @@ const tabs: {id: TabId; label: string}[] = [
 ];
 
 const modifierKeys = new Set(['Shift', 'Control', 'Alt', 'Meta']);
+const panelPositionOptions: Array<{value: PanelPositionMode; label: string}> = [
+  {value: 'center', label: '居中显示'},
+  {value: 'last', label: '上次位置'},
+  {value: 'cursor', label: '跟随鼠标'},
+];
 
 export function SettingsModal({
   initialHotkeys,
@@ -89,6 +95,24 @@ export function SettingsModal({
     };
   }, [recordingId]);
 
+  useEffect(() => {
+    if (!recordingId) {
+      return;
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (event.buttons === 0) {
+        return;
+      }
+      setRecordingId(null);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+    };
+  }, [recordingId]);
+
   const handleReset = useCallback(() => {
     setHotkeys({...DEFAULT_HOTKEYS});
   }, []);
@@ -135,6 +159,36 @@ export function SettingsModal({
                 <span className="settings-switch-thumb" />
               </span>
             </label>
+          </div>
+          <div className="settings-option">
+            <div className="settings-option-info">
+              <div className="settings-option-title">面板呼出位置</div>
+              <div className="settings-option-desc">
+                选择唤出面板时窗口的显示位置。
+              </div>
+            </div>
+            <div
+              className="settings-choice-group"
+              role="radiogroup"
+              aria-label="面板呼出位置"
+            >
+              {panelPositionOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`settings-choice${preferences.panelPositionMode === option.value ? ' is-active' : ''}`}
+                  aria-pressed={preferences.panelPositionMode === option.value}
+                  onClick={() =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      panelPositionMode: option.value,
+                    }))
+                  }
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       );

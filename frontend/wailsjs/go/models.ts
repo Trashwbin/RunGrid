@@ -200,6 +200,20 @@ export namespace domain {
 	        this.hidden = source["hidden"];
 	    }
 	}
+	export class Point {
+	    x: number;
+	    y: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Point(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.x = source["x"];
+	        this.y = source["y"];
+	    }
+	}
 	export class ScanResult {
 	    total: number;
 	    inserted: number;

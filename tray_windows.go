@@ -365,7 +365,6 @@ var (
 	procCreatePopupMenu          = modUser32.NewProc("CreatePopupMenu")
 	procAppendMenuW              = modUser32.NewProc("AppendMenuW")
 	procTrackPopupMenu           = modUser32.NewProc("TrackPopupMenu")
-	procGetCursorPos             = modUser32.NewProc("GetCursorPos")
 	procSetForegroundWindow      = modUser32.NewProc("SetForegroundWindow")
 	procDestroyMenu              = modUser32.NewProc("DestroyMenu")
 	procShellNotifyIconW         = modShell32.NewProc("Shell_NotifyIconW")

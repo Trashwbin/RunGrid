@@ -26,6 +26,10 @@ export function DeleteItem(arg1) {
   return window['go']['main']['App']['DeleteItem'](arg1);
 }
 
+export function GetCursorAnchorPosition(arg1, arg2) {
+  return window['go']['main']['App']['GetCursorAnchorPosition'](arg1, arg2);
+}
+
 export function LaunchItem(arg1) {
   return window['go']['main']['App']['LaunchItem'](arg1);
 }
