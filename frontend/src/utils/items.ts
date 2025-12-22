@@ -38,7 +38,7 @@ export function toAppItem(
   };
 }
 
-function mapTypeToCategory(type: string): string {
+export function mapTypeToCategory(type: string): string {
   switch (type) {
     case 'folder':
       return 'folders';

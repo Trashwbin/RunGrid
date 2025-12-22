@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS groups (
 	id TEXT PRIMARY KEY,
 	name TEXT NOT NULL,
 	display_order INTEGER NOT NULL DEFAULT 0,
-	color TEXT NOT NULL DEFAULT ''
+	color TEXT NOT NULL DEFAULT '',
+	category TEXT NOT NULL DEFAULT 'app'
 );
 
 CREATE TABLE IF NOT EXISTS items (
@@ -53,5 +54,41 @@ func EnsureSchema(ctx context.Context, db *sql.DB) error {
 	}
 
 	_, err := db.ExecContext(ctx, schema)
+	if err != nil {
+		return err
+	}
+
+	return ensureGroupCategoryColumn(ctx, db)
+}
+
+func ensureGroupCategoryColumn(ctx context.Context, db *sql.DB) error {
+	rows, err := db.QueryContext(ctx, "PRAGMA table_info(groups)")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			cid       int
+			name      string
+			colType   string
+			notNull   int
+			dfltValue sql.NullString
+			pk        int
+		)
+		if err := rows.Scan(&cid, &name, &colType, &notNull, &dfltValue, &pk); err != nil {
+			return err
+		}
+		if name == "category" {
+			return rows.Err()
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	_, err = db.ExecContext(ctx, "ALTER TABLE groups ADD COLUMN category TEXT NOT NULL DEFAULT 'app'")
 	return err
 }

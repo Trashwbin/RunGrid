@@ -20,9 +20,10 @@ func EnsureDefaultGroups(ctx context.Context, groups *GroupService) error {
 	}
 
 	_, err = groups.Create(ctx, domain.GroupInput{
-		Name:  "dev",
-		Order: 0,
-		Color: "#4f7dff",
+		Name:     "dev",
+		Order:    0,
+		Color:    "#4f7dff",
+		Category: "app",
 	})
 	return err
 }

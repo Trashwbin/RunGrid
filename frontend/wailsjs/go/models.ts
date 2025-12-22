@@ -5,6 +5,7 @@ export namespace domain {
 	    name: string;
 	    order: number;
 	    color: string;
+	    category: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Group(source);
@@ -16,12 +17,14 @@ export namespace domain {
 	        this.name = source["name"];
 	        this.order = source["order"];
 	        this.color = source["color"];
+	        this.category = source["category"];
 	    }
 	}
 	export class GroupInput {
 	    name: string;
 	    order: number;
 	    color: string;
+	    category: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new GroupInput(source);
@@ -32,6 +35,7 @@ export namespace domain {
 	        this.name = source["name"];
 	        this.order = source["order"];
 	        this.color = source["color"];
+	        this.category = source["category"];
 	    }
 	}
 	export class HotkeyIssue {
