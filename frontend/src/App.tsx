@@ -47,7 +47,7 @@ import {ContextMenu} from './components/ui/ContextMenu';
 import {ScrollArea} from './components/ui/ScrollArea';
 import {SettingsModal} from './components/settings/SettingsModal';
 import {useModalStore, useToastStore} from './store/overlays';
-import {toAppItem, toGroupTab} from './utils/items';
+import {mapTypeToCategory, toAppItem, toGroupTab} from './utils/items';
 import {
   HOTKEY_ACTIONS,
   loadHotkeys,
@@ -326,6 +326,25 @@ function App() {
     void applyHotkeys(stored);
   }, [applyHotkeys]);
 
+  const categoryGroups = useMemo(
+    () =>
+      groups.filter(
+        (group) =>
+          mapTypeToCategory(group.category || 'app') === activeCategoryId
+      ),
+    [groups, activeCategoryId]
+  );
+
+  useEffect(() => {
+    if (activeGroupId === 'all') {
+      return;
+    }
+    const hasGroup = categoryGroups.some((group) => group.id === activeGroupId);
+    if (!hasGroup) {
+      setActiveGroupId('all');
+    }
+  }, [activeGroupId, categoryGroups]);
+
   const handleAddGroup = useCallback(async () => {
     const name = window.prompt('分组名称');
     if (!name) {
@@ -335,8 +354,9 @@ function App() {
     try {
       const newGroup = await CreateGroup({
         name,
-        order: groups.length,
+        order: categoryGroups.length,
         color: '#4f7dff',
+        category: mapCategoryToType(activeCategoryId),
       });
       setActiveGroupId(newGroup.id);
       await loadGroups();
@@ -344,7 +364,13 @@ function App() {
     } catch (err) {
       showError(err instanceof Error ? err.message : '无法创建分组');
     }
-  }, [groups.length, loadGroups, notify, showError]);
+  }, [
+    activeCategoryId,
+    categoryGroups.length,
+    loadGroups,
+    notify,
+    showError,
+  ]);
 
   const handleAddItem = useCallback(async () => {
     if (activeGroupId === 'all') {
@@ -637,8 +663,8 @@ function App() {
 
 
   const groupTabs = useMemo(
-    () => [{id: 'all', label: '全部'}, ...groups.map(toGroupTab)],
-    [groups]
+    () => [{id: 'all', label: '全部'}, ...categoryGroups.map(toGroupTab)],
+    [categoryGroups]
   );
 
   const appItems = useMemo(
