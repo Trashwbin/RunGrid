@@ -17,6 +17,7 @@ import {
   ScanShortcuts,
   SetFavorite,
   SyncIcons,
+  UpdateGroup,
   UpdateItem,
   UpdateItemIconFromSource,
 } from '../wailsjs/go/main/App';
@@ -99,6 +100,17 @@ function App() {
     x: 0,
     y: 0,
     item: null,
+  });
+  const [groupMenuState, setGroupMenuState] = useState<{
+    open: boolean;
+    x: number;
+    y: number;
+    groupId: string | null;
+  }>({
+    open: false,
+    x: 0,
+    y: 0,
+    groupId: null,
   });
 
   const showError = useCallback(
@@ -786,6 +798,17 @@ function App() {
     setMenuState((prev) => ({...prev, open: false}));
   }, []);
 
+  const handleOpenGroupMenu = useCallback(
+    (groupId: string, x: number, y: number) => {
+      setGroupMenuState({open: true, x, y, groupId});
+    },
+    []
+  );
+
+  const handleCloseGroupMenu = useCallback(() => {
+    setGroupMenuState((prev) => ({...prev, open: false}));
+  }, []);
+
   const handleMenuAction = useCallback(
     async (actionId: string) => {
       const current = menuState.item;
@@ -936,6 +959,95 @@ function App() {
     ]
   );
 
+  const groupMenuItems = useMemo(
+    () => [{id: 'edit', label: '编辑分组'}],
+    []
+  );
+
+  const handleGroupMenuAction = useCallback(
+    async (actionId: string) => {
+      const groupId = groupMenuState.groupId;
+      if (!groupId) {
+        return;
+      }
+      const group = groups.find((item) => item.id === groupId);
+      if (!group) {
+        return;
+      }
+
+      if (actionId === 'edit') {
+        const initialDraft: GroupDraft = {
+          name: group.name,
+          icon: group.icon ?? '',
+        };
+        groupDraftRef.current = initialDraft;
+        const modalId = openModal({
+          kind: 'form',
+          title: '编辑分组',
+          description: '更新分组名称与图标。',
+          size: 'lg',
+          primaryLabel: '保存',
+          secondaryLabel: '关闭',
+          autoClose: false,
+          content: (
+            <GroupForm
+              initialDraft={initialDraft}
+              onChange={(next) => {
+                groupDraftRef.current = next;
+              }}
+            />
+          ),
+          onConfirm: async () => {
+            const draft = groupDraftRef.current;
+            if (!draft) {
+              return;
+            }
+            const name = draft.name.trim();
+            if (!name) {
+              notify({
+                type: 'warning',
+                title: '请补全信息',
+                message: '分组名称不能为空。',
+              });
+              return;
+            }
+
+            try {
+              await UpdateGroup({
+                id: group.id,
+                name,
+                order: group.order,
+                color: group.color,
+                category: group.category || mapCategoryToType(activeCategoryId),
+                icon: draft.icon,
+              });
+              await loadGroups();
+              notify({type: 'success', title: '分组已更新', message: name});
+              closeModal(modalId);
+              groupDraftRef.current = null;
+            } catch (err) {
+              showError(err instanceof Error ? err.message : '无法更新分组');
+            }
+          },
+          onCancel: () => {
+            groupDraftRef.current = null;
+            closeModal(modalId);
+          },
+        });
+      }
+    },
+    [
+      activeCategoryId,
+      closeModal,
+      groupMenuState.groupId,
+      groups,
+      loadGroups,
+      notify,
+      openModal,
+      showError,
+    ]
+  );
+
   const menuItem = menuState.item;
   const hasMenuPath = Boolean(menuItem?.path?.trim());
   const isMenuWeb = menuItem ? isWebPath(menuItem.path) : false;
@@ -959,6 +1071,7 @@ function App() {
           activeId={activeGroupId}
           onSelect={setActiveGroupId}
           onAdd={handleAddGroup}
+          onOpenMenu={handleOpenGroupMenu}
         />
         <ScrollArea className="grid-scroll" viewportClassName="grid-scroll__viewport">
           <AppGrid
@@ -969,13 +1082,21 @@ function App() {
             onLaunch={handleLaunch}
             onOpenMenu={handleOpenMenu}
           />
-        </ScrollArea>
-      </div>
-      <SearchBar value={query} onChange={setQuery} inputRef={searchInputRef} />
-      <ContextMenu
-        open={menuState.open}
-        x={menuState.x}
-        y={menuState.y}
+      </ScrollArea>
+    </div>
+    <SearchBar value={query} onChange={setQuery} inputRef={searchInputRef} />
+    <ContextMenu
+      open={groupMenuState.open}
+      x={groupMenuState.x}
+      y={groupMenuState.y}
+      items={groupMenuItems}
+      onSelect={handleGroupMenuAction}
+      onClose={handleCloseGroupMenu}
+    />
+    <ContextMenu
+      open={menuState.open}
+      x={menuState.x}
+      y={menuState.y}
         items={[
           {
             id: 'edit',
