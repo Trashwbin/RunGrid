@@ -91,7 +91,10 @@ export function EditItemForm({initialDraft, onChange}: EditItemFormProps) {
           className="edit-input"
           value={draft.name}
           onChange={(event) =>
-            setDraft((prev) => ({...prev, name: event.target.value}))
+            setDraft((prev) => {
+              const name = event.target.value;
+              return {...prev, name, glyph: makeGlyph(name)};
+            })
           }
           placeholder="输入名称"
         />
@@ -159,4 +162,18 @@ function toIconURL(path: string | undefined) {
     return undefined;
   }
   return `/icons/${encodeURIComponent(fileName)}`;
+}
+
+function makeGlyph(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return '?';
+  }
+
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
