@@ -38,6 +38,7 @@ func (s *GroupService) Create(ctx context.Context, input domain.GroupInput) (dom
 		Order:    input.Order,
 		Color:    strings.TrimSpace(input.Color),
 		Category: category,
+		Icon:     strings.TrimSpace(input.Icon),
 	}
 
 	return s.repo.Create(ctx, group)
@@ -49,6 +50,7 @@ func (s *GroupService) Update(ctx context.Context, group domain.Group) (domain.G
 	}
 	group.Name = strings.TrimSpace(group.Name)
 	group.Color = strings.TrimSpace(group.Color)
+	group.Icon = strings.TrimSpace(group.Icon)
 	if strings.TrimSpace(group.Category) == "" {
 		existing, err := s.repo.Get(ctx, group.ID)
 		if err != nil {

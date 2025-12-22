@@ -24,6 +24,7 @@ func EnsureDefaultGroups(ctx context.Context, groups *GroupService) error {
 		Order:    0,
 		Color:    "#4f7dff",
 		Category: "app",
+		Icon:     "",
 	})
 	return err
 }

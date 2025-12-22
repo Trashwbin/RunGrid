@@ -1,5 +1,6 @@
 import type {domain} from '../../wailsjs/go/models';
 import type {Accent, AppItem, GroupTab} from '../types';
+import {toGroupIconName} from './groupIcons';
 
 const accentPalette: Accent[] = [
   'pink',
@@ -14,6 +15,7 @@ export function toGroupTab(group: domain.Group): GroupTab {
   return {
     id: group.id,
     label: group.name,
+    icon: toGroupIconName(group.icon),
   };
 }
 
