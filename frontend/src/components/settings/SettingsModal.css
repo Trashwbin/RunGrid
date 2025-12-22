@@ -144,6 +144,39 @@
   color: var(--text-muted);
 }
 
+.settings-choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--chip);
+  border: 1px solid var(--outline);
+}
+
+.settings-choice {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-choice:hover {
+  color: var(--text-primary);
+}
+
+.settings-choice.is-active {
+  color: var(--text-primary);
+  background: var(--surface-strong);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
 .settings-switch {
   position: relative;
   display: inline-flex;

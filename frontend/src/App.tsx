@@ -7,6 +7,7 @@ import {
   CreateGroup,
   CreateItem,
   DeleteItem,
+  GetCursorAnchorPosition,
   LaunchItem,
   ListGroups,
   ListItems,
@@ -22,10 +23,14 @@ import {
 import type {domain} from '../wailsjs/go/models';
 import {
   EventsOn,
+  WindowCenter,
+  WindowGetPosition,
+  WindowGetSize,
   WindowHide,
   WindowIsMaximised,
   WindowIsMinimised,
   WindowIsNormal,
+  WindowSetPosition,
   WindowShow,
   WindowUnminimise,
 } from '../wailsjs/runtime/runtime';
@@ -110,25 +115,76 @@ function App() {
     setIconVersion((prev) => prev + 1);
   }, []);
 
-  const showWindow = useCallback(() => {
+  const applyPanelPosition = useCallback(async () => {
+    const mode = preferences.panelPositionMode;
+    if (mode === 'center') {
+      WindowCenter();
+      return;
+    }
+    if (mode === 'last') {
+      if (preferences.lastWindowPosition) {
+        WindowSetPosition(
+          preferences.lastWindowPosition.x,
+          preferences.lastWindowPosition.y
+        );
+        return;
+      }
+      WindowCenter();
+      return;
+    }
+    if (mode === 'cursor') {
+      try {
+        const size = await WindowGetSize();
+        const anchor = await GetCursorAnchorPosition(size.w, size.h);
+        WindowSetPosition(anchor.x, anchor.y);
+        return;
+      } catch {
+        WindowCenter();
+      }
+    }
+  }, [preferences.lastWindowPosition, preferences.panelPositionMode]);
+
+  const focusSearch = useCallback(() => {
+    if (!preferences.focusSearchOnShow) {
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    });
+  }, [preferences.focusSearchOnShow]);
+
+  const persistWindowPosition = useCallback(async () => {
+    try {
+      const pos = await WindowGetPosition();
+      setPreferences((prev) => {
+        const next = {
+          ...prev,
+          lastWindowPosition: {x: pos.x, y: pos.y},
+        };
+        savePreferences(next);
+        return next;
+      });
+    } catch {
+    }
+  }, []);
+
+  const showWindow = useCallback(async () => {
+    await applyPanelPosition();
     WindowShow();
     try {
       WindowUnminimise();
     } catch {
     }
     setIsWindowHidden(false);
-    if (preferences.focusSearchOnShow) {
-      window.requestAnimationFrame(() => {
-        searchInputRef.current?.focus();
-        searchInputRef.current?.select();
-      });
-    }
-  }, [preferences.focusSearchOnShow]);
+    focusSearch();
+  }, [applyPanelPosition, focusSearch]);
 
   const hideWindow = useCallback(() => {
+    void persistWindowPosition();
     WindowHide();
     setIsWindowHidden(true);
-  }, []);
+  }, [persistWindowPosition]);
 
   const hotkeyLabelMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -256,17 +312,13 @@ function App() {
   useEffect(() => {
     const off = EventsOn('window:show', () => {
       setIsWindowHidden(false);
-      if (preferences.focusSearchOnShow) {
-        window.requestAnimationFrame(() => {
-          searchInputRef.current?.focus();
-          searchInputRef.current?.select();
-        });
-      }
+      void applyPanelPosition();
+      focusSearch();
     });
     return () => {
       off();
     };
-  }, [preferences.focusSearchOnShow]);
+  }, [applyPanelPosition, focusSearch]);
 
   useEffect(() => {
     const stored = loadHotkeys();
@@ -536,13 +588,13 @@ function App() {
     async (id: string) => {
       if (id === 'toggle-app') {
         if (isWindowHidden) {
-          showWindow();
+          await showWindow();
           return;
         }
         try {
           const isMinimised = await WindowIsMinimised();
           if (isMinimised) {
-            showWindow();
+            await showWindow();
             return;
           }
           const isNormal = await WindowIsNormal();
@@ -553,7 +605,7 @@ function App() {
           }
         } catch {
         }
-        showWindow();
+        await showWindow();
         return;
       }
 
