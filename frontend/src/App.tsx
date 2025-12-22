@@ -79,6 +79,7 @@ function App() {
   );
   const scanRootsRef = useRef<string[]>([]);
   const editDraftRef = useRef<EditDraft | null>(null);
+  const createDraftRef = useRef<EditDraft | null>(null);
   const hotkeyDraftRef = useRef<HotkeyConfig | null>(null);
   const preferenceDraftRef = useRef<Preferences | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -378,32 +379,91 @@ function App() {
       return;
     }
 
-    const name = window.prompt('项目名称');
-    if (!name) {
-      return;
-    }
-    const path = window.prompt('目标路径');
-    if (!path) {
-      return;
-    }
+    const initialDraft: EditDraft = {
+      id: '',
+      name: '',
+      path: '',
+      originalPath: '',
+      iconUrl: undefined,
+      glyph: '?',
+      favorite: false,
+      hidden: false,
+    };
+    createDraftRef.current = initialDraft;
+    const modalId = openModal({
+      kind: 'form',
+      title: '新建快捷方式',
+      description: '填写名称与目标路径，可选自定义图标。',
+      size: 'lg',
+      primaryLabel: '添加',
+      secondaryLabel: '取消',
+      autoClose: false,
+      content: (
+        <EditItemForm
+          initialDraft={initialDraft}
+          onChange={(next) => {
+            createDraftRef.current = next;
+          }}
+        />
+      ),
+      onConfirm: async () => {
+        const draft = createDraftRef.current;
+        if (!draft) {
+          return;
+        }
+        const name = draft.name.trim();
+        const path = draft.path.trim();
+        if (!name || !path) {
+          notify({
+            type: 'warning',
+            title: '请补全信息',
+            message: '名称和目标路径不能为空。',
+          });
+          return;
+        }
 
-    try {
-      await CreateItem({
-        name,
-        path,
-        type: mapCategoryToType(activeCategoryId),
-        icon_path: '',
-        group_id: activeGroupId,
-        tags: [],
-        favorite: false,
-        hidden: false,
-      });
-      await loadItems();
-      notify({type: 'success', title: '项目已添加', message: name});
-    } catch (err) {
-      showError(err instanceof Error ? err.message : '无法创建项目');
-    }
-  }, [activeCategoryId, activeGroupId, loadItems, notify, showError]);
+        try {
+          const created = await CreateItem({
+            name,
+            path,
+            type: mapCategoryToType(activeCategoryId),
+            icon_path: '',
+            group_id: activeGroupId,
+            tags: [],
+            favorite: draft.favorite,
+            hidden: draft.hidden,
+          });
+          let iconUpdated = false;
+          if (draft.iconSource) {
+            await UpdateItemIconFromSource(created.id, draft.iconSource);
+            iconUpdated = true;
+          }
+          await loadItems();
+          if (iconUpdated) {
+            bumpIconVersion();
+          }
+          notify({type: 'success', title: '项目已添加', message: name});
+          closeModal(modalId);
+          createDraftRef.current = null;
+        } catch (err) {
+          showError(err instanceof Error ? err.message : '无法创建项目');
+        }
+      },
+      onCancel: () => {
+        createDraftRef.current = null;
+        closeModal(modalId);
+      },
+    });
+  }, [
+    activeCategoryId,
+    activeGroupId,
+    bumpIconVersion,
+    closeModal,
+    loadItems,
+    notify,
+    openModal,
+    showError,
+  ]);
 
   const startScan = useCallback(
     async (roots: string[]) => {
