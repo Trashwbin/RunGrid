@@ -35,6 +35,7 @@ import {
   WindowUnminimise,
 } from '../wailsjs/runtime/runtime';
 import {AppGrid} from './components/grid/AppGrid';
+import {GroupForm, type GroupDraft} from './components/group/GroupForm';
 import {CategoryBar} from './components/layout/CategoryBar';
 import {GroupTabs} from './components/layout/GroupTabs';
 import {SearchBar} from './components/layout/SearchBar';
@@ -80,6 +81,7 @@ function App() {
   const scanRootsRef = useRef<string[]>([]);
   const editDraftRef = useRef<EditDraft | null>(null);
   const createDraftRef = useRef<EditDraft | null>(null);
+  const groupDraftRef = useRef<GroupDraft | null>(null);
   const hotkeyDraftRef = useRef<HotkeyConfig | null>(null);
   const preferenceDraftRef = useRef<Preferences | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -347,29 +349,68 @@ function App() {
   }, [activeGroupId, categoryGroups]);
 
   const handleAddGroup = useCallback(async () => {
-    const name = window.prompt('分组名称');
-    if (!name) {
-      return;
-    }
+    const initialDraft: GroupDraft = {name: '', icon: ''};
+    groupDraftRef.current = initialDraft;
+    const modalId = openModal({
+      kind: 'form',
+      title: '添加分组',
+      description: '为当前分类创建新的分组。',
+      size: 'lg',
+      primaryLabel: '保存',
+      secondaryLabel: '关闭',
+      autoClose: false,
+      content: (
+        <GroupForm
+          initialDraft={initialDraft}
+          onChange={(next) => {
+            groupDraftRef.current = next;
+          }}
+        />
+      ),
+      onConfirm: async () => {
+        const draft = groupDraftRef.current;
+        if (!draft) {
+          return;
+        }
+        const name = draft.name.trim();
+        if (!name) {
+          notify({
+            type: 'warning',
+            title: '请补全信息',
+            message: '分组名称不能为空。',
+          });
+          return;
+        }
 
-    try {
-      const newGroup = await CreateGroup({
-        name,
-        order: categoryGroups.length,
-        color: '#4f7dff',
-        category: mapCategoryToType(activeCategoryId),
-      });
-      setActiveGroupId(newGroup.id);
-      await loadGroups();
-      notify({type: 'success', title: '分组已创建', message: name});
-    } catch (err) {
-      showError(err instanceof Error ? err.message : '无法创建分组');
-    }
+        try {
+          const newGroup = await CreateGroup({
+            name,
+            order: categoryGroups.length,
+            color: '#4f7dff',
+            category: mapCategoryToType(activeCategoryId),
+            icon: draft.icon,
+          });
+          setActiveGroupId(newGroup.id);
+          await loadGroups();
+          notify({type: 'success', title: '分组已创建', message: name});
+          closeModal(modalId);
+          groupDraftRef.current = null;
+        } catch (err) {
+          showError(err instanceof Error ? err.message : '无法创建分组');
+        }
+      },
+      onCancel: () => {
+        groupDraftRef.current = null;
+        closeModal(modalId);
+      },
+    });
   }, [
     activeCategoryId,
     categoryGroups.length,
+    closeModal,
     loadGroups,
     notify,
+    openModal,
     showError,
   ]);
 

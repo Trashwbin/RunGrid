@@ -18,7 +18,8 @@ export function GroupTabs({tabs, activeId, onSelect, onAdd}: GroupTabsProps) {
           className={`group-tab${activeId === tab.id ? ' is-active' : ''}`}
           onClick={() => onSelect(tab.id)}
         >
-          {tab.label}
+          {tab.icon ? <Icon name={tab.icon} size={14} /> : null}
+          <span>{tab.label}</span>
         </button>
       ))}
       <button

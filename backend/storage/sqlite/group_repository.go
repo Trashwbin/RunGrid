@@ -18,7 +18,7 @@ func NewGroupRepository(db *sql.DB) *GroupRepository {
 
 func (r *GroupRepository) List(ctx context.Context) ([]domain.Group, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, name, display_order, color, category
+		SELECT id, name, display_order, color, category, icon
 		FROM groups
 		ORDER BY display_order ASC, name ASC
 	`)
@@ -30,7 +30,7 @@ func (r *GroupRepository) List(ctx context.Context) ([]domain.Group, error) {
 	groups := []domain.Group{}
 	for rows.Next() {
 		var group domain.Group
-		if err := rows.Scan(&group.ID, &group.Name, &group.Order, &group.Color, &group.Category); err != nil {
+		if err := rows.Scan(&group.ID, &group.Name, &group.Order, &group.Color, &group.Category, &group.Icon); err != nil {
 			return nil, err
 		}
 		groups = append(groups, group)
@@ -45,12 +45,12 @@ func (r *GroupRepository) List(ctx context.Context) ([]domain.Group, error) {
 
 func (r *GroupRepository) Get(ctx context.Context, id string) (domain.Group, error) {
 	row := r.db.QueryRowContext(ctx, `
-		SELECT id, name, display_order, color, category
+		SELECT id, name, display_order, color, category, icon
 		FROM groups WHERE id = ?
 	`, id)
 
 	var group domain.Group
-	if err := row.Scan(&group.ID, &group.Name, &group.Order, &group.Color, &group.Category); err != nil {
+	if err := row.Scan(&group.ID, &group.Name, &group.Order, &group.Color, &group.Category, &group.Icon); err != nil {
 		if err == sql.ErrNoRows {
 			return domain.Group{}, storage.ErrNotFound
 		}
@@ -62,9 +62,9 @@ func (r *GroupRepository) Get(ctx context.Context, id string) (domain.Group, err
 
 func (r *GroupRepository) Create(ctx context.Context, group domain.Group) (domain.Group, error) {
 	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO groups (id, name, display_order, color, category)
-		VALUES (?, ?, ?, ?, ?)
-	`, group.ID, group.Name, group.Order, group.Color, group.Category)
+		INSERT INTO groups (id, name, display_order, color, category, icon)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, group.ID, group.Name, group.Order, group.Color, group.Category, group.Icon)
 	if err != nil {
 		return domain.Group{}, err
 	}
@@ -74,9 +74,9 @@ func (r *GroupRepository) Create(ctx context.Context, group domain.Group) (domai
 
 func (r *GroupRepository) Update(ctx context.Context, group domain.Group) (domain.Group, error) {
 	result, err := r.db.ExecContext(ctx, `
-		UPDATE groups SET name = ?, display_order = ?, color = ?, category = ?
+		UPDATE groups SET name = ?, display_order = ?, color = ?, category = ?, icon = ?
 		WHERE id = ?
-	`, group.Name, group.Order, group.Color, group.Category, group.ID)
+	`, group.Name, group.Order, group.Color, group.Category, group.Icon, group.ID)
 	if err != nil {
 		return domain.Group{}, err
 	}

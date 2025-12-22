@@ -1,0 +1,41 @@
+.group-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.group-icon-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.group-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+  gap: 10px;
+}
+
+.group-icon-option {
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--outline);
+  background: var(--surface);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.group-icon-option:hover {
+  color: var(--text-primary);
+  border-color: var(--outline-strong);
+}
+
+.group-icon-option.is-selected {
+  border-color: var(--accent);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 2px rgba(122, 162, 255, 0.2);
+}

@@ -6,6 +6,7 @@ type Group struct {
 	Order    int    `json:"order"`
 	Color    string `json:"color"`
 	Category string `json:"category"`
+	Icon     string `json:"icon"`
 }
 
 // GroupInput describes fields required to create a group.
@@ -14,4 +15,5 @@ type GroupInput struct {
 	Order    int    `json:"order"`
 	Color    string `json:"color"`
 	Category string `json:"category"`
+	Icon     string `json:"icon"`
 }

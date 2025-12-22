@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS groups (
 	name TEXT NOT NULL,
 	display_order INTEGER NOT NULL DEFAULT 0,
 	color TEXT NOT NULL DEFAULT '',
-	category TEXT NOT NULL DEFAULT 'app'
+	category TEXT NOT NULL DEFAULT 'app',
+	icon TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS items (
@@ -58,16 +59,18 @@ func EnsureSchema(ctx context.Context, db *sql.DB) error {
 		return err
 	}
 
-	return ensureGroupCategoryColumn(ctx, db)
+	return ensureGroupColumns(ctx, db)
 }
 
-func ensureGroupCategoryColumn(ctx context.Context, db *sql.DB) error {
+func ensureGroupColumns(ctx context.Context, db *sql.DB) error {
 	rows, err := db.QueryContext(ctx, "PRAGMA table_info(groups)")
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 
+	hasCategory := false
+	hasIcon := false
 	for rows.Next() {
 		var (
 			cid       int
@@ -81,7 +84,10 @@ func ensureGroupCategoryColumn(ctx context.Context, db *sql.DB) error {
 			return err
 		}
 		if name == "category" {
-			return rows.Err()
+			hasCategory = true
+		}
+		if name == "icon" {
+			hasIcon = true
 		}
 	}
 
@@ -89,6 +95,17 @@ func ensureGroupCategoryColumn(ctx context.Context, db *sql.DB) error {
 		return err
 	}
 
-	_, err = db.ExecContext(ctx, "ALTER TABLE groups ADD COLUMN category TEXT NOT NULL DEFAULT 'app'")
-	return err
+	if !hasCategory {
+		if _, err := db.ExecContext(ctx, "ALTER TABLE groups ADD COLUMN category TEXT NOT NULL DEFAULT 'app'"); err != nil {
+			return err
+		}
+	}
+
+	if !hasIcon {
+		if _, err := db.ExecContext(ctx, "ALTER TABLE groups ADD COLUMN icon TEXT NOT NULL DEFAULT ''"); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
