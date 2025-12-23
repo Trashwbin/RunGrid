@@ -64,6 +64,23 @@ import {
 } from './utils/preferences';
 import type {AppItem} from './types';
 
+type ClipboardItem = {
+  id: string;
+  name: string;
+  categoryId: string;
+  groupId: string;
+  path: string;
+  type: AppItem['type'];
+  tags: string[];
+  favorite: boolean;
+  hidden: boolean;
+};
+
+type ClipboardPayload = {
+  categoryId: string;
+  items: ClipboardItem[];
+};
+
 function App() {
   const [items, setItems] = useState<domain.Item[]>([]);
   const [groups, setGroups] = useState<domain.Group[]>([]);
@@ -79,7 +96,11 @@ function App() {
   const [preferences, setPreferences] = useState<Preferences>(() =>
     loadPreferences()
   );
+  const [clipboard, setClipboard] = useState<ClipboardPayload | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectionMode, setSelectionMode] = useState(false);
   const scanRootsRef = useRef<string[]>([]);
+  const selectionMetaRef = useRef<Map<string, ClipboardItem>>(new Map());
   const editDraftRef = useRef<EditDraft | null>(null);
   const createDraftRef = useRef<EditDraft | null>(null);
   const groupDraftRef = useRef<GroupDraft | null>(null);
@@ -112,6 +133,15 @@ function App() {
     y: 0,
     groupId: null,
   });
+  const [gridMenuState, setGridMenuState] = useState<{
+    open: boolean;
+    x: number;
+    y: number;
+  }>({
+    open: false,
+    x: 0,
+    y: 0,
+  });
 
   const showError = useCallback(
     (message: string, title = '操作失败') => {
@@ -120,6 +150,32 @@ function App() {
     },
     [notify]
   );
+
+  const handleSelectItem = useCallback((id: string, multi: boolean) => {
+    if (multi) {
+      setSelectionMode(true);
+    }
+    setSelectedIds((prev) => {
+      if (multi) {
+        if (prev.includes(id)) {
+          return prev.filter((itemId) => itemId !== id);
+        }
+        return [...prev, id];
+      }
+      return [id];
+    });
+  }, []);
+
+  const cancelSelection = useCallback(() => {
+    setSelectedIds([]);
+    setSelectionMode(false);
+  }, []);
+
+  useEffect(() => {
+    if (selectedIds.length === 0 && !clipboard) {
+      setSelectionMode(false);
+    }
+  }, [clipboard, selectedIds.length]);
 
   const handleScanRootsChange = useCallback((next: string[]) => {
     setScanRoots(next);
@@ -349,6 +405,10 @@ function App() {
       ),
     [groups, activeCategoryId]
   );
+
+  useEffect(() => {
+    cancelSelection();
+  }, [activeCategoryId, cancelSelection]);
 
   useEffect(() => {
     if (activeGroupId === 'all') {
@@ -790,9 +850,42 @@ function App() {
     [appItems, activeCategoryId]
   );
 
-  const handleOpenMenu = useCallback((item: AppItem, x: number, y: number) => {
-    setMenuState({open: true, x, y, item});
+  const toClipboardItem = useCallback((item: AppItem): ClipboardItem => {
+    return {
+      id: item.id,
+      name: item.name,
+      categoryId: item.categoryId,
+      groupId: item.groupId,
+      path: item.path,
+      type: item.type,
+      tags: item.tags,
+      favorite: item.favorite,
+      hidden: item.hidden,
+    };
   }, []);
+
+  const updateSelectionMeta = useCallback(
+    (nextItems: AppItem[]) => {
+      const map = selectionMetaRef.current;
+      nextItems.forEach((item) => {
+        map.set(item.id, toClipboardItem(item));
+      });
+    },
+    [toClipboardItem]
+  );
+
+  useEffect(() => {
+    updateSelectionMeta(appItems);
+  }, [appItems, updateSelectionMeta]);
+
+  const handleOpenMenu = useCallback(
+    (item: AppItem, x: number, y: number) => {
+      setGroupMenuState((prev) => ({...prev, open: false}));
+      setGridMenuState((prev) => ({...prev, open: false}));
+      setMenuState({open: true, x, y, item});
+    },
+    []
+  );
 
   const handleCloseMenu = useCallback(() => {
     setMenuState((prev) => ({...prev, open: false}));
@@ -800,6 +893,8 @@ function App() {
 
   const handleOpenGroupMenu = useCallback(
     (groupId: string, x: number, y: number) => {
+      setMenuState((prev) => ({...prev, open: false}));
+      setGridMenuState((prev) => ({...prev, open: false}));
       setGroupMenuState({open: true, x, y, groupId});
     },
     []
@@ -809,10 +904,196 @@ function App() {
     setGroupMenuState((prev) => ({...prev, open: false}));
   }, []);
 
+  const handleOpenGridMenu = useCallback((x: number, y: number) => {
+    setMenuState((prev) => ({...prev, open: false}));
+    setGroupMenuState((prev) => ({...prev, open: false}));
+    setGridMenuState({open: true, x, y});
+  }, []);
+
+  const handleCloseGridMenu = useCallback(() => {
+    setGridMenuState((prev) => ({...prev, open: false}));
+  }, []);
+
+  const getSelectedClipboardItems = useCallback((): ClipboardItem[] => {
+    const map = selectionMetaRef.current;
+    return selectedIds
+      .map((id) => map.get(id))
+      .filter((item): item is ClipboardItem => Boolean(item));
+  }, [selectedIds]);
+
+  const cutItems = useCallback(
+    (itemsToCut: ClipboardItem[]) => {
+      if (itemsToCut.length === 0) {
+        notify({type: 'warning', title: '请先选择项目'});
+        return;
+      }
+      const categoryId = itemsToCut[0].categoryId;
+      const mixedCategory = itemsToCut.some(
+        (item) => item.categoryId !== categoryId
+      );
+      if (mixedCategory) {
+        notify({
+          type: 'warning',
+          title: '不支持跨大类剪切',
+          message: '请确保所选项目来自同一大类。',
+        });
+        return;
+      }
+      setClipboard({categoryId, items: itemsToCut});
+      setSelectionMode(true);
+      setSelectedIds(itemsToCut.map((item) => item.id));
+      notify({
+        type: 'success',
+        title: '已剪切',
+        message: `共 ${itemsToCut.length} 项`,
+      });
+    },
+    [notify]
+  );
+
+  const handleCutSelected = useCallback(() => {
+    cutItems(getSelectedClipboardItems());
+  }, [cutItems, getSelectedClipboardItems]);
+
+  const canPaste =
+    Boolean(clipboard) &&
+    clipboard?.categoryId === activeCategoryId &&
+    activeGroupId !== 'all';
+
+  const pasteToActiveGroup = useCallback(async () => {
+    if (!clipboard) {
+      notify({type: 'warning', title: '暂无可粘贴内容'});
+      return;
+    }
+    if (activeGroupId === 'all') {
+      notify({
+        type: 'warning',
+        title: '请选择目标分组',
+        message: '请切换到具体分组后再粘贴。',
+      });
+      return;
+    }
+    if (clipboard.categoryId !== activeCategoryId) {
+      notify({
+        type: 'warning',
+        title: '无法跨分类粘贴',
+        message: '请切回剪切时所在的大类。',
+      });
+      return;
+    }
+
+    const itemsToMove = clipboard.items.filter(
+      (item) => item.groupId !== activeGroupId
+    );
+    if (itemsToMove.length === 0) {
+      notify({
+        type: 'info',
+        title: '无需移动',
+        message: '剪切项目已在当前分组中。',
+      });
+      return;
+    }
+
+    try {
+      await Promise.all(
+        itemsToMove.map((item) =>
+          UpdateItem({
+            id: item.id,
+            name: item.name,
+            path: item.path,
+            type: item.type,
+            icon_path: '',
+            group_id: activeGroupId,
+            tags: item.tags,
+            favorite: item.favorite,
+            hidden: item.hidden,
+          })
+        )
+      );
+      await loadItems();
+      setClipboard(null);
+      cancelSelection();
+      notify({
+        type: 'success',
+        title: '已粘贴',
+        message: `共 ${itemsToMove.length} 项`,
+      });
+    } catch (err) {
+      showError(err instanceof Error ? err.message : '粘贴失败');
+    }
+  }, [
+    activeCategoryId,
+    activeGroupId,
+    clipboard,
+    cancelSelection,
+    loadItems,
+    notify,
+    showError,
+  ]);
+
+  const gridMenuItems = useMemo(
+    () => [
+      {
+        id: 'paste',
+        label: '粘贴',
+        disabled: !canPaste,
+      },
+    ],
+    [canPaste]
+  );
+
+  const handleGridMenuAction = useCallback(
+    (actionId: string) => {
+      if (actionId === 'paste') {
+        void pasteToActiveGroup();
+      }
+    },
+    [pasteToActiveGroup]
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!event.ctrlKey && !event.metaKey) {
+        return;
+      }
+      const target = event.target;
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) {
+          return;
+        }
+      }
+
+      const key = event.key.toLowerCase();
+      if (key === 'x') {
+        event.preventDefault();
+        handleCutSelected();
+      }
+      if (key === 'v') {
+        event.preventDefault();
+        void pasteToActiveGroup();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleCutSelected, pasteToActiveGroup]);
+
   const handleMenuAction = useCallback(
     async (actionId: string) => {
       const current = menuState.item;
       if (!current) {
+        return;
+      }
+
+      if (actionId === 'cut') {
+        const itemsToCut =
+          selectedIds.length > 0 && selectedIds.includes(current.id)
+            ? getSelectedClipboardItems()
+            : [toClipboardItem(current)];
+        cutItems(itemsToCut);
         return;
       }
 
@@ -950,6 +1231,10 @@ function App() {
     },
     [
       menuState.item,
+      selectedIds,
+      getSelectedClipboardItems,
+      cutItems,
+      toClipboardItem,
       loadItems,
       notify,
       openModal,
@@ -959,10 +1244,7 @@ function App() {
     ]
   );
 
-  const groupMenuItems = useMemo(
-    () => [{id: 'edit', label: '编辑分组'}],
-    []
-  );
+  const groupMenuItems = useMemo(() => [{id: 'edit', label: '编辑分组'}], []);
 
   const handleGroupMenuAction = useCallback(
     async (actionId: string) => {
@@ -1051,6 +1333,9 @@ function App() {
   const menuItem = menuState.item;
   const hasMenuPath = Boolean(menuItem?.path?.trim());
   const isMenuWeb = menuItem ? isWebPath(menuItem.path) : false;
+  const clipboardCount = clipboard?.items.length ?? 0;
+  const showSelectionBar =
+    selectionMode || selectedIds.length > 0 || clipboardCount > 0;
 
   return (
     <div className="app-shell">
@@ -1081,23 +1366,79 @@ function App() {
             onAddItem={handleAddItem}
             onLaunch={handleLaunch}
             onOpenMenu={handleOpenMenu}
+            onOpenGridMenu={handleOpenGridMenu}
+            selectedIds={selectedIds}
+            onSelectItem={handleSelectItem}
+            selectionMode={selectionMode}
           />
-      </ScrollArea>
-    </div>
-    <SearchBar value={query} onChange={setQuery} inputRef={searchInputRef} />
-    <ContextMenu
-      open={groupMenuState.open}
-      x={groupMenuState.x}
-      y={groupMenuState.y}
-      items={groupMenuItems}
-      onSelect={handleGroupMenuAction}
-      onClose={handleCloseGroupMenu}
-    />
-    <ContextMenu
-      open={menuState.open}
-      x={menuState.x}
-      y={menuState.y}
+        </ScrollArea>
+      </div>
+      {showSelectionBar ? (
+        <div className="selection-bar">
+          <div className="selection-meta">
+            <span>
+              {selectedIds.length > 0
+                ? `已选 ${selectedIds.length} 项`
+                : clipboardCount > 0
+                  ? `已剪切 ${clipboardCount} 项`
+                  : '未选择'}
+            </span>
+          </div>
+          <div className="selection-actions">
+            <button
+              type="button"
+              className="selection-button"
+              onClick={handleCutSelected}
+              disabled={selectedIds.length === 0}
+            >
+              剪切 (Ctrl+X)
+            </button>
+            <button
+              type="button"
+              className="selection-button"
+              onClick={() => {
+                void pasteToActiveGroup();
+              }}
+              disabled={!canPaste}
+            >
+              粘贴 (Ctrl+V)
+            </button>
+            <button
+              type="button"
+              className="selection-button"
+              onClick={cancelSelection}
+            >
+              取消选择
+            </button>
+          </div>
+        </div>
+      ) : null}
+      <SearchBar value={query} onChange={setQuery} inputRef={searchInputRef} />
+      <ContextMenu
+        open={gridMenuState.open}
+        x={gridMenuState.x}
+        y={gridMenuState.y}
+        items={gridMenuItems}
+        onSelect={handleGridMenuAction}
+        onClose={handleCloseGridMenu}
+      />
+      <ContextMenu
+        open={groupMenuState.open}
+        x={groupMenuState.x}
+        y={groupMenuState.y}
+        items={groupMenuItems}
+        onSelect={handleGroupMenuAction}
+        onClose={handleCloseGroupMenu}
+      />
+      <ContextMenu
+        open={menuState.open}
+        x={menuState.x}
+        y={menuState.y}
         items={[
+          {
+            id: 'cut',
+            label: '剪切',
+          },
           {
             id: 'edit',
             label: '编辑',
