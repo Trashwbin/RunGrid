@@ -50,6 +50,7 @@ import {ScrollArea} from './components/ui/ScrollArea';
 import {SettingsModal} from './components/settings/SettingsModal';
 import {useModalStore, useToastStore} from './store/overlays';
 import {mapTypeToCategory, toAppItem, toGroupTab} from './utils/items';
+import {toGroupIconName} from './utils/groupIcons';
 import {
   HOTKEY_ACTIONS,
   loadHotkeys,
@@ -1260,7 +1261,7 @@ function App() {
       if (actionId === 'edit') {
         const initialDraft: GroupDraft = {
           name: group.name,
-          icon: group.icon ?? '',
+          icon: toGroupIconName(group.icon) ?? '',
         };
         groupDraftRef.current = initialDraft;
         const modalId = openModal({
