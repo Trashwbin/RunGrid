@@ -8,6 +8,10 @@ type AppGridProps = {
   onAddItem?: () => void;
   onLaunch?: (id: string) => void;
   onOpenMenu?: (item: AppItem, x: number, y: number) => void;
+  onOpenGridMenu?: (x: number, y: number) => void;
+  selectedIds?: string[];
+  onSelectItem?: (id: string, multi: boolean) => void;
+  selectionMode?: boolean;
 };
 
 export function AppGrid({
@@ -17,6 +21,10 @@ export function AppGrid({
   onAddItem,
   onLaunch,
   onOpenMenu,
+  onOpenGridMenu,
+  selectedIds = [],
+  onSelectItem,
+  selectionMode = false,
 }: AppGridProps) {
   if (error) {
     return (
@@ -38,7 +46,16 @@ export function AppGrid({
 
   if (items.length === 0) {
     return (
-      <div className="empty-state">
+      <div
+        className="empty-state"
+        onContextMenu={(event) => {
+          if (!onOpenGridMenu) {
+            return;
+          }
+          event.preventDefault();
+          onOpenGridMenu(event.clientX, event.clientY);
+        }}
+      >
         <p>暂无项目</p>
         <span>试试更换分组或搜索</span>
         {onAddItem ? (
@@ -51,13 +68,28 @@ export function AppGrid({
   }
 
   return (
-    <div className="app-grid">
+    <div
+      className="app-grid"
+      onContextMenu={(event) => {
+        if (!onOpenGridMenu) {
+          return;
+        }
+        if (event.target !== event.currentTarget) {
+          return;
+        }
+        event.preventDefault();
+        onOpenGridMenu(event.clientX, event.clientY);
+      }}
+    >
       {items.map((item) => (
         <AppTile
           key={item.id}
           item={item}
+          selected={selectedIds.includes(item.id)}
+          selectionMode={selectionMode}
           onLaunch={onLaunch}
           onOpenMenu={onOpenMenu}
+          onSelect={onSelectItem}
         />
       ))}
     </div>
