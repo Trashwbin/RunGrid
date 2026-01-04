@@ -25,11 +25,10 @@
 }
 
 .brand-mark {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  background: linear-gradient(135deg, #7aa2ff, #4f7dff);
-  box-shadow: 0 0 12px rgba(122, 162, 255, 0.6);
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
 }
 
 .brand-name {

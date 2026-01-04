@@ -5,6 +5,7 @@ import {DropdownMenu} from '../ui/DropdownMenu';
 import {Icon} from '../ui/Icon';
 import {IconButton} from '../ui/IconButton';
 import {WindowHide} from '../../../wailsjs/runtime/runtime';
+import brand from '../../assets/images/app.png';
 
 type TopBarProps = {
   title: string;
@@ -42,7 +43,7 @@ export function TopBar({title, menuItems, onMenuSelect, onHide}: TopBarProps) {
   return (
     <header className="top-bar">
       <div className="brand">
-        <span className="brand-mark" aria-hidden="true" />
+        <img className="brand-mark" src={brand} alt={`${title} 标志`} />
         <span className="brand-name">{title}</span>
       </div>
       <div className="top-actions" ref={menuRef}>
