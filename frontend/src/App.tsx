@@ -146,6 +146,7 @@ function App() {
     x: 0,
     y: 0,
   });
+  const [focusedId, setFocusedId] = useState<string | null>(null);
 
   const showError = useCallback(
     (message: string, title = '操作失败') => {
@@ -158,6 +159,7 @@ function App() {
   const handleSelectItem = useCallback((id: string, multi: boolean) => {
     if (multi) {
       setSelectionMode(true);
+      setFocusedId(null);
     }
     setSelectedIds((prev) => {
       if (multi) {
@@ -173,6 +175,14 @@ function App() {
   const cancelSelection = useCallback(() => {
     setSelectedIds([]);
     setSelectionMode(false);
+  }, []);
+
+  const handleFocusItem = useCallback((id: string) => {
+    setFocusedId(id);
+  }, []);
+
+  const handleClearFocus = useCallback(() => {
+    setFocusedId(null);
   }, []);
 
   useEffect(() => {
@@ -458,6 +468,7 @@ function App() {
 
   useEffect(() => {
     cancelSelection();
+    setFocusedId(null);
   }, [activeCategoryId, cancelSelection]);
 
   useEffect(() => {
@@ -911,6 +922,7 @@ function App() {
 
   const handleLaunch = useCallback(
     async (id: string) => {
+      setFocusedId(null);
       try {
         await LaunchItem(id);
         await loadItems();
@@ -936,6 +948,16 @@ function App() {
     () => appItems.filter((item) => item.categoryId === activeCategoryId),
     [appItems, activeCategoryId]
   );
+
+  useEffect(() => {
+    if (!focusedId) {
+      return;
+    }
+    const exists = filteredItems.some((item) => item.id === focusedId);
+    if (!exists) {
+      setFocusedId(null);
+    }
+  }, [filteredItems, focusedId]);
 
   const toClipboardItem = useCallback((item: AppItem): ClipboardItem => {
     return {
@@ -1486,6 +1508,10 @@ function App() {
             selectedIds={selectedIds}
             onSelectItem={handleSelectItem}
             selectionMode={selectionMode}
+            launchMode={preferences.launchMode}
+            focusedId={focusedId}
+            onFocusItem={handleFocusItem}
+            onClearFocus={handleClearFocus}
           />
         </ScrollArea>
       </div>

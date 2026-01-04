@@ -250,12 +250,14 @@
   color: var(--text-primary);
 }
 
-.app-tile.is-selected .app-icon {
+.app-tile.is-selected .app-icon,
+.app-tile.is-focused .app-icon {
   background: rgba(79, 125, 255, 0.08);
   box-shadow: 0 0 0 2px rgba(122, 162, 255, 0.35);
 }
 
-.app-tile.is-selected .app-icon::after {
+.app-tile.is-selected .app-icon::after,
+.app-tile.is-focused .app-icon::after {
   content: '';
   position: absolute;
   inset: -6px;
@@ -265,7 +267,8 @@
   pointer-events: none;
 }
 
-.app-tile.is-selected .app-name {
+.app-tile.is-selected .app-name,
+.app-tile.is-focused .app-name {
   color: var(--text-primary);
 }
 
@@ -280,6 +283,7 @@
   color: #f9f9fb;
   background: transparent;
   box-shadow: none;
+  transition: all 0.2s ease;
 }
 
 .app-icon img {
@@ -352,6 +356,7 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
+  transition: color 0.2s ease;
 }
 
 .empty-state {

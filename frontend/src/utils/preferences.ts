@@ -1,8 +1,10 @@
 export type PanelPositionMode = 'center' | 'last' | 'cursor';
+export type LaunchMode = 'single' | 'double';
 
 export type Preferences = {
   focusSearchOnShow: boolean;
   panelPositionMode: PanelPositionMode;
+  launchMode: LaunchMode;
   lastWindowPosition?: {x: number; y: number};
 };
 
@@ -11,9 +13,11 @@ const STORAGE_KEY = 'rungrid.preferences';
 export const DEFAULT_PREFERENCES: Preferences = {
   focusSearchOnShow: true,
   panelPositionMode: 'center',
+  launchMode: 'single',
 };
 
 const PANEL_POSITION_MODES: PanelPositionMode[] = ['center', 'last', 'cursor'];
+const LAUNCH_MODES: LaunchMode[] = ['single', 'double'];
 
 export function loadPreferences(): Preferences {
   const next = {...DEFAULT_PREFERENCES};
@@ -32,6 +36,12 @@ export function loadPreferences(): Preferences {
         PANEL_POSITION_MODES.includes(parsed.panelPositionMode as PanelPositionMode)
       ) {
         next.panelPositionMode = parsed.panelPositionMode as PanelPositionMode;
+      }
+      if (
+        typeof parsed.launchMode === 'string' &&
+        LAUNCH_MODES.includes(parsed.launchMode as LaunchMode)
+      ) {
+        next.launchMode = parsed.launchMode as LaunchMode;
       }
       if (
         parsed.lastWindowPosition &&
