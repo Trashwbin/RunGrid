@@ -13,9 +13,5 @@ export const menuItems: MenuItem[] = [
   {id: 'scan', label: '扫描快捷方式'},
   {id: 'import-rules', label: '导入分组规则'},
   {id: 'sync-icons', label: '刷新图标缓存'},
-  {id: 'dedupe', label: '清理重复项'},
   {id: 'clear', label: '清空项目'},
-  {id: 'hide-desktop', label: '隐藏桌面图标'},
-  {id: 'show-desktop', label: '显示桌面图标'},
-  {id: 'help', label: '帮助文档'},
 ];
