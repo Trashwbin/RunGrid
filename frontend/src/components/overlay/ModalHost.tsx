@@ -112,7 +112,9 @@ function ModalView({modal, zIndex, onClose}: ModalViewProps) {
         <div className="modal-header">
           <div className="modal-header-text">
             <h2 className="modal-title">{modal.title}</h2>
-            {modal.description && modal.kind !== 'progress' ? (
+            {modal.description &&
+            modal.kind !== 'progress' &&
+            modal.kind !== 'error' ? (
               <p className="modal-description">{modal.description}</p>
             ) : null}
           </div>
@@ -202,10 +204,6 @@ function renderModalBody(modal: ModalState) {
         ) : null}
       </div>
     );
-  }
-
-  if (modal.description) {
-    return <p className="modal-description">{modal.description}</p>;
   }
 
   return null;
