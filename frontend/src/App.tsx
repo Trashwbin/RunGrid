@@ -8,11 +8,13 @@ import {
   CreateItem,
   DeleteItem,
   GetCursorAnchorPosition,
+  ImportGroupRules,
   LaunchItem,
   ListGroups,
   ListItems,
   ListScanRoots,
   OpenItemLocation,
+  PickRuleFile,
   RefreshItemIcon,
   ScanShortcuts,
   SetFavorite,
@@ -747,6 +749,41 @@ function App() {
         return;
       }
 
+      if (id === 'import-rules') {
+        let modalId: string | null = null;
+        try {
+          const filePath = await PickRuleFile();
+          if (!filePath) {
+            return;
+          }
+          modalId = openModal({
+            kind: 'progress',
+            title: '正在导入规则',
+            description: '正在解析并应用分组规则…',
+            closable: false,
+            backdropClose: false,
+          });
+          setIsLoading(true);
+          setError(null);
+          const result = await ImportGroupRules(filePath);
+          await loadGroups();
+          await loadItems();
+          notify({
+            type: 'success',
+            title: '规则已导入',
+            message: `新增分组 ${result.groups_created}，更新分组 ${result.groups_updated}，更新项目 ${result.items_updated}`,
+          });
+        } catch (err) {
+          showError(err instanceof Error ? err.message : '导入失败', '导入失败');
+        } finally {
+          setIsLoading(false);
+          if (modalId) {
+            closeModal(modalId);
+          }
+        }
+        return;
+      }
+
       if (id === 'clear') {
         openModal({
           kind: 'confirm',
@@ -774,6 +811,7 @@ function App() {
     [
       closeModal,
       bumpIconVersion,
+      loadGroups,
       loadItems,
       notify,
       openSettingsModal,

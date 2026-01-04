@@ -16,6 +16,8 @@ export function DeleteItem(arg1:string):Promise<void>;
 
 export function GetCursorAnchorPosition(arg1:number,arg2:number):Promise<domain.Point>;
 
+export function ImportGroupRules(arg1:string):Promise<domain.RuleImportResult>;
+
 export function LaunchItem(arg1:string):Promise<domain.Item>;
 
 export function ListGroups():Promise<Array<domain.Group>>;
@@ -27,6 +29,8 @@ export function ListScanRoots():Promise<Array<string>>;
 export function OpenItemLocation(arg1:string):Promise<void>;
 
 export function PickIconSource():Promise<string>;
+
+export function PickRuleFile():Promise<string>;
 
 export function PickScanRoot():Promise<string>;
 

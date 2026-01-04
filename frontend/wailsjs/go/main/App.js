@@ -30,6 +30,10 @@ export function GetCursorAnchorPosition(arg1, arg2) {
   return window['go']['main']['App']['GetCursorAnchorPosition'](arg1, arg2);
 }
 
+export function ImportGroupRules(arg1) {
+  return window['go']['main']['App']['ImportGroupRules'](arg1);
+}
+
 export function LaunchItem(arg1) {
   return window['go']['main']['App']['LaunchItem'](arg1);
 }
@@ -52,6 +56,10 @@ export function OpenItemLocation(arg1) {
 
 export function PickIconSource() {
   return window['go']['main']['App']['PickIconSource']();
+}
+
+export function PickRuleFile() {
+  return window['go']['main']['App']['PickRuleFile']();
 }
 
 export function PickScanRoot() {
