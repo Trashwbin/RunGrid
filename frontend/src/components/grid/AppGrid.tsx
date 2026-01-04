@@ -12,6 +12,10 @@ type AppGridProps = {
   selectedIds?: string[];
   onSelectItem?: (id: string, multi: boolean) => void;
   selectionMode?: boolean;
+  launchMode?: 'single' | 'double';
+  focusedId?: string | null;
+  onFocusItem?: (id: string) => void;
+  onClearFocus?: () => void;
 };
 
 export function AppGrid({
@@ -25,6 +29,10 @@ export function AppGrid({
   selectedIds = [],
   onSelectItem,
   selectionMode = false,
+  launchMode = 'single',
+  focusedId = null,
+  onFocusItem,
+  onClearFocus,
 }: AppGridProps) {
   if (error) {
     return (
@@ -70,6 +78,15 @@ export function AppGrid({
   return (
     <div
       className="app-grid"
+      onClick={(event) => {
+        if (!onClearFocus) {
+          return;
+        }
+        if (event.target !== event.currentTarget) {
+          return;
+        }
+        onClearFocus();
+      }}
       onContextMenu={(event) => {
         if (!onOpenGridMenu) {
           return;
@@ -86,10 +103,13 @@ export function AppGrid({
           key={item.id}
           item={item}
           selected={selectedIds.includes(item.id)}
+          focused={focusedId === item.id}
           selectionMode={selectionMode}
+          launchMode={launchMode}
           onLaunch={onLaunch}
           onOpenMenu={onOpenMenu}
           onSelect={onSelectItem}
+          onFocus={onFocusItem}
         />
       ))}
     </div>

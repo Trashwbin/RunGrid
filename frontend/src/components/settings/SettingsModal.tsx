@@ -7,6 +7,7 @@ import {
 } from '../../utils/hotkeys';
 import {
   DEFAULT_PREFERENCES,
+  type LaunchMode,
   type PanelPositionMode,
   type Preferences,
 } from '../../utils/preferences';
@@ -33,6 +34,10 @@ const panelPositionOptions: Array<{value: PanelPositionMode; label: string}> = [
   {value: 'center', label: '居中显示'},
   {value: 'last', label: '上次位置'},
   {value: 'cursor', label: '跟随鼠标'},
+];
+const launchModeOptions: Array<{value: LaunchMode; label: string}> = [
+  {value: 'single', label: '单击启动'},
+  {value: 'double', label: '双击启动'},
 ];
 
 export function SettingsModal({
@@ -181,6 +186,36 @@ export function SettingsModal({
                     setPreferences((prev) => ({
                       ...prev,
                       panelPositionMode: option.value,
+                    }))
+                  }
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="settings-option">
+            <div className="settings-option-info">
+              <div className="settings-option-title">启动方式</div>
+              <div className="settings-option-desc">
+                选择点击图标时的启动行为。
+              </div>
+            </div>
+            <div
+              className="settings-choice-group"
+              role="radiogroup"
+              aria-label="启动方式"
+            >
+              {launchModeOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`settings-choice${preferences.launchMode === option.value ? ' is-active' : ''}`}
+                  aria-pressed={preferences.launchMode === option.value}
+                  onClick={() =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      launchMode: option.value,
                     }))
                   }
                 >
