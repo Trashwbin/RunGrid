@@ -16,6 +16,7 @@ type Item struct {
 	ID          string     `json:"id"`
 	Name        string     `json:"name"`
 	Path        string     `json:"path"`
+	TargetName  string     `json:"target_name"`
 	Type        ItemType   `json:"type"`
 	IconPath    string     `json:"icon_path"`
 	GroupID     string     `json:"group_id"`
@@ -27,26 +28,28 @@ type Item struct {
 }
 
 type ItemInput struct {
-	Name     string   `json:"name"`
-	Path     string   `json:"path"`
-	Type     ItemType `json:"type"`
-	IconPath string   `json:"icon_path"`
-	GroupID  string   `json:"group_id"`
-	Tags     []string `json:"tags"`
-	Favorite bool     `json:"favorite"`
-	Hidden   bool     `json:"hidden"`
+	Name       string   `json:"name"`
+	Path       string   `json:"path"`
+	TargetName string   `json:"target_name"`
+	Type       ItemType `json:"type"`
+	IconPath   string   `json:"icon_path"`
+	GroupID    string   `json:"group_id"`
+	Tags       []string `json:"tags"`
+	Favorite   bool     `json:"favorite"`
+	Hidden     bool     `json:"hidden"`
 }
 
 type ItemUpdate struct {
-	ID       string   `json:"id"`
-	Name     string   `json:"name"`
-	Path     string   `json:"path"`
-	Type     ItemType `json:"type"`
-	IconPath string   `json:"icon_path"`
-	GroupID  string   `json:"group_id"`
-	Tags     []string `json:"tags"`
-	Favorite bool     `json:"favorite"`
-	Hidden   bool     `json:"hidden"`
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	Path       string   `json:"path"`
+	TargetName string   `json:"target_name"`
+	Type       ItemType `json:"type"`
+	IconPath   string   `json:"icon_path"`
+	GroupID    string   `json:"group_id"`
+	Tags       []string `json:"tags"`
+	Favorite   bool     `json:"favorite"`
+	Hidden     bool     `json:"hidden"`
 }
 
 func (t ItemType) IsValid() bool {

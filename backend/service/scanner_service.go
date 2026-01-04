@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"rungrid/backend/domain"
 	"rungrid/backend/scanner"
@@ -62,13 +63,23 @@ func (s *ScannerService) scan(ctx context.Context, roots []string) (domain.ScanR
 
 		existing, err := s.items.GetByPath(ctx, input.Path)
 		if err == nil {
+			needsUpdate := false
+			update := domain.ItemUpdate{
+				ID:       existing.ID,
+				Favorite: existing.Favorite,
+				Hidden:   existing.Hidden,
+			}
 			if existing.Type != input.Type && input.Type.IsValid() {
-				_, updateErr := s.items.Update(ctx, domain.ItemUpdate{
-					ID:       existing.ID,
-					Type:     input.Type,
-					Favorite: existing.Favorite,
-					Hidden:   existing.Hidden,
-				})
+				update.Type = input.Type
+				needsUpdate = true
+			}
+			if strings.TrimSpace(input.TargetName) != "" && !strings.EqualFold(existing.TargetName, input.TargetName) {
+				update.TargetName = strings.TrimSpace(input.TargetName)
+				needsUpdate = true
+			}
+
+			if needsUpdate {
+				_, updateErr := s.items.Update(ctx, update)
 				if updateErr != nil && !errors.Is(updateErr, storage.ErrInvalidInput) {
 					return result, updateErr
 				}

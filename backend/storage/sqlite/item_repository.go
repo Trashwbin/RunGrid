@@ -21,7 +21,7 @@ func NewItemRepository(db *sql.DB) *ItemRepository {
 
 func (r *ItemRepository) List(ctx context.Context, filter storage.ItemFilter) ([]domain.Item, error) {
 	query := `
-		SELECT id, name, path, type, icon_path, group_id, tags, favorite, launch_count, last_used_at, hidden
+		SELECT id, name, path, target_name, type, icon_path, group_id, tags, favorite, launch_count, last_used_at, hidden
 		FROM items
 	`
 	args := []interface{}{}
@@ -65,7 +65,7 @@ func (r *ItemRepository) List(ctx context.Context, filter storage.ItemFilter) ([
 
 func (r *ItemRepository) Get(ctx context.Context, id string) (domain.Item, error) {
 	row := r.db.QueryRowContext(ctx, `
-		SELECT id, name, path, type, icon_path, group_id, tags, favorite, launch_count, last_used_at, hidden
+		SELECT id, name, path, target_name, type, icon_path, group_id, tags, favorite, launch_count, last_used_at, hidden
 		FROM items WHERE id = ?
 	`, id)
 
@@ -82,7 +82,7 @@ func (r *ItemRepository) Get(ctx context.Context, id string) (domain.Item, error
 
 func (r *ItemRepository) GetByPath(ctx context.Context, path string) (domain.Item, error) {
 	row := r.db.QueryRowContext(ctx, `
-		SELECT id, name, path, type, icon_path, group_id, tags, favorite, launch_count, last_used_at, hidden
+		SELECT id, name, path, target_name, type, icon_path, group_id, tags, favorite, launch_count, last_used_at, hidden
 		FROM items WHERE LOWER(path) = LOWER(?)
 	`, path)
 
@@ -122,12 +122,13 @@ func (r *ItemRepository) Create(ctx context.Context, item domain.Item) (domain.I
 
 	_, err = r.db.ExecContext(ctx, `
 		INSERT INTO items (
-			id, name, path, type, icon_path, group_id, tags, favorite, launch_count, last_used_at, hidden
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			id, name, path, target_name, type, icon_path, group_id, tags, favorite, launch_count, last_used_at, hidden
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		item.ID,
 		item.Name,
 		item.Path,
+		item.TargetName,
 		string(item.Type),
 		item.IconPath,
 		item.GroupID,
@@ -154,6 +155,7 @@ func (r *ItemRepository) Update(ctx context.Context, item domain.Item) (domain.I
 		UPDATE items SET
 			name = ?,
 			path = ?,
+			target_name = ?,
 			type = ?,
 			icon_path = ?,
 			group_id = ?,
@@ -166,6 +168,7 @@ func (r *ItemRepository) Update(ctx context.Context, item domain.Item) (domain.I
 	`,
 		item.Name,
 		item.Path,
+		item.TargetName,
 		string(item.Type),
 		item.IconPath,
 		item.GroupID,
@@ -251,6 +254,7 @@ type itemScanner interface {
 func scanItem(scanner itemScanner) (domain.Item, error) {
 	var (
 		item     domain.Item
+		targetName string
 		typeText string
 		tagsText string
 		favorite int
@@ -262,6 +266,7 @@ func scanItem(scanner itemScanner) (domain.Item, error) {
 		&item.ID,
 		&item.Name,
 		&item.Path,
+		&targetName,
 		&typeText,
 		&item.IconPath,
 		&item.GroupID,
@@ -276,6 +281,7 @@ func scanItem(scanner itemScanner) (domain.Item, error) {
 	}
 
 	item.Type = domain.ItemType(typeText)
+	item.TargetName = targetName
 	item.Favorite = favorite == 1
 	item.Hidden = hidden == 1
 	if lastUsed.Valid {

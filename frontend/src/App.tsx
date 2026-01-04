@@ -540,6 +540,7 @@ function App() {
           const created = await CreateItem({
             name,
             path,
+            target_name: toTargetName(path),
             type: mapCategoryToType(activeCategoryId),
             icon_path: '',
             group_id: activeGroupId,
@@ -1002,6 +1003,7 @@ function App() {
             id: item.id,
             name: item.name,
             path: item.path,
+            target_name: toTargetName(item.path),
             type: item.type,
             icon_path: '',
             group_id: activeGroupId,
@@ -1149,6 +1151,7 @@ function App() {
                 id: draft.id,
                 name,
                 path,
+                target_name: toTargetName(path),
                 type: pathChanged ? '' : current.type,
                 icon_path: '',
                 group_id: '',
@@ -1490,6 +1493,31 @@ function mapCategoryToType(categoryId: string): domain.ItemInput['type'] {
     default:
       return 'app';
   }
+}
+
+function toTargetName(path: string): string {
+  const trimmed = path.trim();
+  if (!trimmed) {
+    return '';
+  }
+  const lower = trimmed.toLowerCase();
+  if (lower.startsWith('http://') || lower.startsWith('https://')) {
+    try {
+      const url = new URL(trimmed);
+      if (url.hostname) {
+        return url.hostname.toLowerCase();
+      }
+    } catch {
+      return lower;
+    }
+  }
+  const normalized = trimmed.replace(/\\/g, '/');
+  const parts = normalized.split('/');
+  const base = parts[parts.length - 1];
+  if (!base) {
+    return lower;
+  }
+  return base.toLowerCase();
 }
 
 function isWebPath(path: string) {

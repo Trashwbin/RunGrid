@@ -137,6 +137,8 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 			if name == "" {
 				name = entry.Name()
 			}
+			targetName := ""
+			targetPath := ""
 
 			timestamp := time.Time{}
 			if latest, ok := latestFileTimestamp(path); ok {
@@ -153,6 +155,7 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 				if resolver != nil {
 					target, args, err := resolver.Resolve(path)
 					if err == nil {
+						targetPath = target
 						if isUninstallerEntry(name, path, target, args) {
 							return nil
 						}
@@ -162,6 +165,7 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 						}
 					}
 				}
+				targetName = deriveTargetName(ext, path, targetPath)
 			} else if ext == ".exe" {
 				if isUninstallerEntry(name, path, path, "") {
 					return nil
@@ -169,17 +173,19 @@ func (s *WindowsScanner) Scan(ctx context.Context) ([]domain.ItemInput, error) {
 				if isSystemBinaryPath(path) {
 					itemType = domain.ItemTypeSystem
 				}
+				targetName = deriveTargetName(ext, path, "")
 			}
 
 			item := domain.ItemInput{
-				Name:     name,
-				Path:     path,
-				Type:     itemType,
-				IconPath: "",
-				GroupID:  "",
-				Tags:     nil,
-				Favorite: false,
-				Hidden:   false,
+				Name:       name,
+				Path:       path,
+				TargetName: targetName,
+				Type:       itemType,
+				IconPath:   "",
+				GroupID:    "",
+				Tags:       nil,
+				Favorite:   false,
+				Hidden:     false,
 			}
 
 			if existing, ok := candidates[dedupeKey]; ok {
@@ -248,5 +254,65 @@ func mapExtensionType(ext string) (domain.ItemType, bool) {
 		return domain.ItemTypeURL, true
 	default:
 		return "", false
+	}
+}
+
+func deriveTargetName(ext, sourcePath, targetPath string) string {
+	switch strings.ToLower(ext) {
+	case ".lnk":
+		if name := targetNameFromShortcutTarget(targetPath); name != "" {
+			return name
+		}
+		return targetNameFromShortcutSource(sourcePath)
+	case ".exe":
+		return targetNameFromPath(sourcePath)
+	default:
+		return ""
+	}
+}
+
+func targetNameFromShortcutTarget(path string) string {
+	if isIconResourcePath(path) {
+		return ""
+	}
+	return targetNameFromPath(path)
+}
+
+func targetNameFromShortcutSource(path string) string {
+	base := targetNameFromPath(path)
+	if base == "" {
+		return ""
+	}
+	switch strings.ToLower(filepath.Ext(base)) {
+	case ".lnk", ".url":
+		return strings.TrimSuffix(base, filepath.Ext(base))
+	default:
+		return base
+	}
+}
+
+func targetNameFromPath(path string) string {
+	clean := strings.TrimSpace(path)
+	if clean == "" {
+		return ""
+	}
+	clean = strings.Trim(clean, "\"'")
+	base := strings.TrimSpace(filepath.Base(clean))
+	if base == "" || base == "." || base == string(os.PathSeparator) {
+		return ""
+	}
+	return strings.ToLower(base)
+}
+
+func isIconResourcePath(path string) bool {
+	clean := strings.TrimSpace(path)
+	if clean == "" {
+		return false
+	}
+	switch strings.ToLower(filepath.Ext(clean)) {
+	case ".ico", ".icl", ".dll", ".mun":
+		return true
+	default:
+		return false
 	}
 }
