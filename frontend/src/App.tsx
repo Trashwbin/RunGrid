@@ -6,6 +6,7 @@ import {
   ClearItems,
   CreateGroup,
   CreateItem,
+  DeleteGroup,
   DeleteItem,
   GetCursorAnchorPosition,
   ImportGroupRules,
@@ -407,6 +408,52 @@ function App() {
           mapTypeToCategory(group.category || 'app') === activeCategoryId
       ),
     [groups, activeCategoryId]
+  );
+
+  const handleReorderGroup = useCallback(
+    async (sourceId: string, targetId: string) => {
+      if (!sourceId || !targetId || sourceId === targetId) {
+        return;
+      }
+      const sourceIndex = categoryGroups.findIndex((group) => group.id === sourceId);
+      const targetIndex = categoryGroups.findIndex((group) => group.id === targetId);
+      if (sourceIndex < 0 || targetIndex < 0) {
+        return;
+      }
+
+      const reordered = [...categoryGroups];
+      const [moved] = reordered.splice(sourceIndex, 1);
+      reordered.splice(targetIndex, 0, moved);
+
+      const updates = reordered
+        .map((group, index) => {
+          if (group.order === index) {
+            return null;
+          }
+          return UpdateGroup({
+            id: group.id,
+            name: group.name,
+            order: index,
+            color: group.color,
+            category: group.category || 'app',
+            icon: group.icon,
+          });
+        })
+        .filter(Boolean) as Array<Promise<domain.Group>>;
+
+      if (updates.length === 0) {
+        return;
+      }
+
+      try {
+        await Promise.all(updates);
+        await loadGroups();
+        notify({type: 'success', title: '分组已排序'});
+      } catch (err) {
+        showError(err instanceof Error ? err.message : '排序失败', '排序失败');
+      }
+    },
+    [categoryGroups, loadGroups, notify, showError]
   );
 
   useEffect(() => {
@@ -1286,7 +1333,13 @@ function App() {
     ]
   );
 
-  const groupMenuItems = useMemo(() => [{id: 'edit', label: '编辑分组'}], []);
+  const groupMenuItems = useMemo(
+    () => [
+      {id: 'edit', label: '编辑分组'},
+      {id: 'delete', label: '删除分组', tone: 'danger'},
+    ],
+    []
+  );
 
   const handleGroupMenuAction = useCallback(
     async (actionId: string) => {
@@ -1359,6 +1412,26 @@ function App() {
           },
         });
       }
+
+      if (actionId === 'delete') {
+        openModal({
+          kind: 'confirm',
+          title: `删除分组「${group.name}」？`,
+          description: '分组删除后，该分组下的项目会保留在全部列表中。',
+          tone: 'danger',
+          primaryLabel: '删除',
+          secondaryLabel: '取消',
+          onConfirm: async () => {
+            try {
+              await DeleteGroup(group.id);
+              await loadGroups();
+              notify({type: 'success', title: '分组已删除', message: group.name});
+            } catch (err) {
+              showError(err instanceof Error ? err.message : '无法删除分组');
+            }
+          },
+        });
+      }
     },
     [
       activeCategoryId,
@@ -1399,6 +1472,7 @@ function App() {
           onSelect={setActiveGroupId}
           onAdd={handleAddGroup}
           onOpenMenu={handleOpenGroupMenu}
+          onReorder={handleReorderGroup}
         />
         <ScrollArea className="grid-scroll" viewportClassName="grid-scroll__viewport">
           <AppGrid
