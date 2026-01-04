@@ -1,10 +1,12 @@
 export type PanelPositionMode = 'center' | 'last' | 'cursor';
 export type LaunchMode = 'single' | 'double';
+export type PanelCloseMode = 'manual' | 'launch' | 'blur' | 'launch-or-blur';
 
 export type Preferences = {
   focusSearchOnShow: boolean;
   panelPositionMode: PanelPositionMode;
   launchMode: LaunchMode;
+  panelCloseMode: PanelCloseMode;
   lastWindowPosition?: {x: number; y: number};
 };
 
@@ -14,10 +16,17 @@ export const DEFAULT_PREFERENCES: Preferences = {
   focusSearchOnShow: true,
   panelPositionMode: 'center',
   launchMode: 'single',
+  panelCloseMode: 'launch',
 };
 
 const PANEL_POSITION_MODES: PanelPositionMode[] = ['center', 'last', 'cursor'];
 const LAUNCH_MODES: LaunchMode[] = ['single', 'double'];
+const PANEL_CLOSE_MODES: PanelCloseMode[] = [
+  'manual',
+  'launch',
+  'blur',
+  'launch-or-blur',
+];
 
 export function loadPreferences(): Preferences {
   const next = {...DEFAULT_PREFERENCES};
@@ -42,6 +51,12 @@ export function loadPreferences(): Preferences {
         LAUNCH_MODES.includes(parsed.launchMode as LaunchMode)
       ) {
         next.launchMode = parsed.launchMode as LaunchMode;
+      }
+      if (
+        typeof parsed.panelCloseMode === 'string' &&
+        PANEL_CLOSE_MODES.includes(parsed.panelCloseMode as PanelCloseMode)
+      ) {
+        next.panelCloseMode = parsed.panelCloseMode as PanelCloseMode;
       }
       if (
         parsed.lastWindowPosition &&

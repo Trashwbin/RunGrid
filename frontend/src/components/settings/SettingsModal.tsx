@@ -8,6 +8,7 @@ import {
 import {
   DEFAULT_PREFERENCES,
   type LaunchMode,
+  type PanelCloseMode,
   type PanelPositionMode,
   type Preferences,
 } from '../../utils/preferences';
@@ -38,6 +39,12 @@ const panelPositionOptions: Array<{value: PanelPositionMode; label: string}> = [
 const launchModeOptions: Array<{value: LaunchMode; label: string}> = [
   {value: 'single', label: '单击启动'},
   {value: 'double', label: '双击启动'},
+];
+const panelCloseOptions: Array<{value: PanelCloseMode; label: string}> = [
+  {value: 'manual', label: '不自动关闭'},
+  {value: 'launch', label: '启动应用后关闭'},
+  {value: 'blur', label: '失去焦点后关闭'},
+  {value: 'launch-or-blur', label: '启动或失焦都关闭'},
 ];
 
 export function SettingsModal({
@@ -216,6 +223,36 @@ export function SettingsModal({
                     setPreferences((prev) => ({
                       ...prev,
                       launchMode: option.value,
+                    }))
+                  }
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="settings-option">
+            <div className="settings-option-info">
+              <div className="settings-option-title">面板关闭时机</div>
+              <div className="settings-option-desc">
+                选择 RunGrid 面板的自动隐藏时机。
+              </div>
+            </div>
+            <div
+              className="settings-choice-group settings-choice-group--grid"
+              role="radiogroup"
+              aria-label="面板关闭时机"
+            >
+              {panelCloseOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`settings-choice${preferences.panelCloseMode === option.value ? ' is-active' : ''}`}
+                  aria-pressed={preferences.panelCloseMode === option.value}
+                  onClick={() =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      panelCloseMode: option.value,
                     }))
                   }
                 >

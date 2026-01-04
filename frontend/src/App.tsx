@@ -406,6 +406,27 @@ function App() {
   }, [applyPanelPosition, focusSearch]);
 
   useEffect(() => {
+    if (
+      preferences.panelCloseMode !== 'blur' &&
+      preferences.panelCloseMode !== 'launch-or-blur'
+    ) {
+      return;
+    }
+
+    const handleBlur = () => {
+      if (isWindowHidden) {
+        return;
+      }
+      hideWindow();
+    };
+
+    window.addEventListener('blur', handleBlur);
+    return () => {
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [hideWindow, isWindowHidden, preferences.panelCloseMode]);
+
+  useEffect(() => {
     const stored = loadHotkeys();
     hotkeyDraftRef.current = stored;
     void applyHotkeys(stored);
@@ -925,12 +946,18 @@ function App() {
       setFocusedId(null);
       try {
         await LaunchItem(id);
+        if (
+          preferences.panelCloseMode === 'launch' ||
+          preferences.panelCloseMode === 'launch-or-blur'
+        ) {
+          hideWindow();
+        }
         await loadItems();
       } catch (err) {
         showError(err instanceof Error ? err.message : '启动失败', '启动失败');
       }
     },
-    [loadItems, showError]
+    [hideWindow, loadItems, preferences.panelCloseMode, showError]
   );
 
 

@@ -156,6 +156,17 @@
   border: 1px solid var(--outline);
 }
 
+.settings-choice-group--grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  justify-items: stretch;
+}
+
+.settings-choice-group--grid .settings-choice {
+  width: 100%;
+  justify-content: center;
+}
+
 .settings-choice {
   border: none;
   background: transparent;
