@@ -29,7 +29,7 @@
 - SearchEngine：内存索引 name + 拼音首字母，前缀/模糊；排序（收藏 > 最近使用 > 启动次数）。
 - Persistence：SQLite CRUD，索引字段 name/path/tags；启动计数/最近使用异步落库。
 - Settings：主题、图标大小、网格密度、开机自启、监听桌面变更。
-- Tray/Hotkey：托盘菜单、Alt+Space 等唤出窗口。
+- Tray/Hotkey：托盘菜单、Ctrl+Q 等唤出窗口。
 
 ### 数据模型（示意）
 - Item：ID, Name, Path, Type(app/url/folder/doc), IconPath, GroupID, Tags, Favorite, LaunchCount, LastUsedAt, Hidden

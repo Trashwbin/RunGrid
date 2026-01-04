@@ -19,14 +19,13 @@ type SettingsModalProps = {
   onPreferencesChange: (next: Preferences) => void;
 };
 
-type TabId = 'general' | 'scan' | 'hotkeys' | 'storage' | 'vip';
+type TabId = 'general' | 'scan' | 'hotkeys' | 'storage';
 
 const tabs: {id: TabId; label: string}[] = [
   {id: 'general', label: '通用设置'},
   {id: 'scan', label: '文件扫描'},
   {id: 'hotkeys', label: '快捷键'},
   {id: 'storage', label: '数据存储'},
-  {id: 'vip', label: '我的会员'},
 ];
 
 const modifierKeys = new Set(['Shift', 'Control', 'Alt', 'Meta']);
