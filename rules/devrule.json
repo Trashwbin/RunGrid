@@ -1,0 +1,203 @@
+{
+  "version": "1.0",
+  "groups": [
+    {
+      "id": "dev",
+      "name": "开发",
+      "category": "app",
+      "order": 10,
+      "color": "#2F80ED",
+      "icon": "code"
+    },
+    {
+      "id": "browser",
+      "name": "浏览器",
+      "category": "app",
+      "order": 20,
+      "color": "#00A3A3",
+      "icon": "globe"
+    },
+    {
+      "id": "comm",
+      "name": "沟通协作",
+      "category": "app",
+      "order": 30,
+      "color": "#FF8B8B",
+      "icon": "chat"
+    },
+    {
+      "id": "tools",
+      "name": "效率工具",
+      "category": "app",
+      "order": 40,
+      "color": "#7AA2FF",
+      "icon": "tools"
+    },
+    {
+      "id": "office",
+      "name": "办公文档",
+      "category": "app",
+      "order": 50,
+      "color": "#C98CFF",
+      "icon": "file"
+    },
+    {
+      "id": "download",
+      "name": "下载工具",
+      "category": "app",
+      "order": 60,
+      "color": "#FFBE6E",
+      "icon": "download"
+    },
+    {
+      "id": "remote",
+      "name": "远程控制",
+      "category": "app",
+      "order": 70,
+      "color": "#6BD1FF",
+      "icon": "map"
+    }
+  ],
+  "rules": [
+    {
+      "group_id": "dev",
+      "match": {
+        "target_name": [
+          "apifox.exe",
+          "apipost.exe",
+          "atom.exe",
+          "cmake-gui.exe",
+          "code - insiders.exe",
+          "code.exe",
+          "conemu.exe",
+          "conemu64.exe",
+          "datagrip.exe",
+          "datagrip64.exe",
+          "dbeaver.exe",
+          "dbeaver64.exe",
+          "devenv.exe",
+          "docker desktop.exe",
+          "eclipse.exe",
+          "emacs.exe",
+          "git-bash.exe",
+          "git-cmd.exe",
+          "git-gui.exe",
+          "gitkraken.exe",
+          "goland.exe",
+          "goland64.exe",
+          "heidisql.exe",
+          "idea.exe",
+          "idea64.exe",
+          "insomnia.exe",
+          "jetbrains-toolbox.exe",
+          "lens.exe",
+          "mongodb compass.exe",
+          "mysqlworkbench.exe",
+          "netbeans.exe",
+          "netbeans64.exe",
+          "node.exe",
+          "notepad++.exe",
+          "phpstorm.exe",
+          "phpstorm64.exe",
+          "postman.exe",
+          "pycharm.exe",
+          "pycharm64.exe",
+          "rancher-desktop.exe",
+          "redisinsight.exe",
+          "rider.exe",
+          "rider64.exe",
+          "rubymine.exe",
+          "rubymine64.exe",
+          "sourcetree.exe",
+          "sqlitebrowser.exe",
+          "ssms.exe",
+          "studio.exe",
+          "studio64.exe",
+          "sublime_text.exe",
+          "tableplus.exe",
+          "tortoiseproc.exe",
+          "tortoiseidiff.exe",
+          "tortoisemerge.exe",
+          "webstorm.exe",
+          "webstorm64.exe",
+          "wt.exe",
+          "wsl",
+          "wsl settings",
+          "wsl.exe"
+        ]
+      }
+    },
+    {
+      "group_id": "browser",
+      "match": {
+        "target_name": [
+          "brave.exe",
+          "chrome.exe",
+          "firefox.exe",
+          "msedge.exe",
+          "opera.exe",
+          "vivaldi.exe"
+        ]
+      }
+    },
+    {
+      "group_id": "comm",
+      "match": {
+        "target_name": [
+          "feishu.exe",
+          "weixin.exe"
+        ]
+      }
+    },
+    {
+      "group_id": "tools",
+      "match": {
+        "target_name": [
+          "7zfm.exe",
+          "audiorelay.exe",
+          "bandizip.exe",
+          "file explorer",
+          "listary.exe",
+          "pixpin.exe",
+          "pixstart.app.exe",
+          "rungrid"
+        ]
+      }
+    },
+    {
+      "group_id": "office",
+      "match": {
+        "target_name": [
+          "appvlp.exe",
+          "excel.exe",
+          "msaccess.exe",
+          "msoev.exe",
+          "onenote.exe",
+          "onenotem.exe",
+          "outlook.exe",
+          "powerpnt.exe",
+          "setlang.exe",
+          "typora.exe",
+          "winword.exe",
+          "wordpad.exe"
+        ]
+      }
+    },
+    {
+      "group_id": "download",
+      "match": {
+        "target_name": [
+          "idman.exe"
+        ]
+      }
+    },
+    {
+      "group_id": "remote",
+      "match": {
+        "target_name": [
+          "gameviewer.exe"
+        ]
+      }
+    }
+  ]
+}

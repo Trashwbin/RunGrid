@@ -187,6 +187,29 @@ func (a *App) PickTargetFolder() (string, error) {
 	})
 }
 
+func (a *App) PickRuleFile() (string, error) {
+	return runtime.OpenFileDialog(a.context(), runtime.OpenDialogOptions{
+		Title: "选择分组规则",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "规则文件 (*.json)",
+				Pattern:     "*.json",
+			},
+		},
+	})
+}
+
+func (a *App) ImportGroupRules(path string) (domain.RuleImportResult, error) {
+	if strings.TrimSpace(path) == "" {
+		return domain.RuleImportResult{}, storage.ErrInvalidInput
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return domain.RuleImportResult{}, err
+	}
+	return service.ImportGroupRules(a.context(), data, a.groups, a.items)
+}
+
 func (a *App) UpdateItemIconFromSource(id string, source string) (domain.Item, error) {
 	if a.icons == nil {
 		return domain.Item{}, icon.ErrUnsupported
