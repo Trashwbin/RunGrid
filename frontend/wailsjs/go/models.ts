@@ -107,6 +107,7 @@ export namespace domain {
 	    id: string;
 	    name: string;
 	    path: string;
+	    target_name: string;
 	    type: string;
 	    icon_path: string;
 	    group_id: string;
@@ -126,6 +127,7 @@ export namespace domain {
 	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.path = source["path"];
+	        this.target_name = source["target_name"];
 	        this.type = source["type"];
 	        this.icon_path = source["icon_path"];
 	        this.group_id = source["group_id"];
@@ -157,6 +159,7 @@ export namespace domain {
 	export class ItemInput {
 	    name: string;
 	    path: string;
+	    target_name: string;
 	    type: string;
 	    icon_path: string;
 	    group_id: string;
@@ -172,6 +175,7 @@ export namespace domain {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
 	        this.path = source["path"];
+	        this.target_name = source["target_name"];
 	        this.type = source["type"];
 	        this.icon_path = source["icon_path"];
 	        this.group_id = source["group_id"];
@@ -184,6 +188,7 @@ export namespace domain {
 	    id: string;
 	    name: string;
 	    path: string;
+	    target_name: string;
 	    type: string;
 	    icon_path: string;
 	    group_id: string;
@@ -200,6 +205,7 @@ export namespace domain {
 	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.path = source["path"];
+	        this.target_name = source["target_name"];
 	        this.type = source["type"];
 	        this.icon_path = source["icon_path"];
 	        this.group_id = source["group_id"];

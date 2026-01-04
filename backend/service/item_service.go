@@ -70,6 +70,7 @@ func (s *ItemService) Create(ctx context.Context, input domain.ItemInput) (domai
 		ID:       uuid.NewString(),
 		Name:     strings.TrimSpace(input.Name),
 		Path:     strings.TrimSpace(input.Path),
+		TargetName: strings.TrimSpace(input.TargetName),
 		Type:     input.Type,
 		IconPath: strings.TrimSpace(input.IconPath),
 		GroupID:  strings.TrimSpace(input.GroupID),
@@ -101,6 +102,9 @@ func (s *ItemService) Update(ctx context.Context, input domain.ItemUpdate) (doma
 	}
 	if strings.TrimSpace(input.Path) != "" {
 		updated.Path = strings.TrimSpace(input.Path)
+	}
+	if strings.TrimSpace(input.TargetName) != "" {
+		updated.TargetName = strings.TrimSpace(input.TargetName)
 	}
 	if input.Type != "" {
 		updated.Type = input.Type
