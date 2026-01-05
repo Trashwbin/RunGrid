@@ -8,6 +8,13 @@
   "frontend:dev:serverUrl": "auto",
   "author": {
     "name": "Abin",
-    "email": "chenwenbin@ztgame.com"
+    "email": "trashwbin@gmail.com"
+  },
+  "info": {
+    "companyName": "RunGrid",
+    "productName": "RunGrid",
+    "productVersion": "0.1.0",
+    "copyright": "Copyright (c) 2025 RunGrid",
+    "comments": "Built with Wails (https://wails.io)"
   }
 }

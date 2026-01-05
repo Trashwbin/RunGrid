@@ -1385,7 +1385,7 @@ function App() {
   const groupMenuItems = useMemo(
     () => [
       {id: 'edit', label: '编辑分组'},
-      {id: 'delete', label: '删除分组', tone: 'danger'},
+      {id: 'delete', label: '删除分组', tone: 'danger' as const},
     ],
     []
   );

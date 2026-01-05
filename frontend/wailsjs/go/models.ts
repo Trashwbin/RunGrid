@@ -42,22 +42,6 @@ export namespace domain {
 	        this.icon = source["icon"];
 	    }
 	}
-	export class RuleImportResult {
-	    groups_created: number;
-	    groups_updated: number;
-	    items_updated: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new RuleImportResult(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.groups_created = source["groups_created"];
-	        this.groups_updated = source["groups_updated"];
-	        this.items_updated = source["items_updated"];
-	    }
-	}
 	export class HotkeyIssue {
 	    id: string;
 	    keys: string;
@@ -278,3 +262,4 @@ export namespace domain {
 	}
 
 }
+
