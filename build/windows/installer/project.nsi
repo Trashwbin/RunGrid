@@ -1,4 +1,4 @@
-Unicode true
+﻿Unicode true
 
 ####
 ## Please note: Template replacements don't work in this file. They are provided with default defines like
@@ -49,22 +49,46 @@ VIAddVersionKey "ProductName"     "${INFO_PRODUCTNAME}"
 ManifestDPIAware true
 
 !include "MUI.nsh"
+!include "Sections.nsh"
 
 !define MUI_ICON "..\icon.ico"
 !define MUI_UNICON "..\icon.ico"
 # !define MUI_WELCOMEFINISHPAGE_BITMAP "resources\leftimage.bmp" #Include this to add a bitmap on the left side of the Welcome Page. Must be a size of 164x314
 !define MUI_FINISHPAGE_NOAUTOCLOSE # Wait on the INSTFILES page so the user can take a look into the details of the installation steps
+!define MUI_FINISHPAGE_RUN "$INSTDIR\\${PRODUCT_EXECUTABLE}"
+!define MUI_FINISHPAGE_RUN_TEXT "Launch ${INFO_PRODUCTNAME}"
 !define MUI_ABORTWARNING # This will warn the user if they exit from the installer.
+!define MUI_LANGDLL_REGISTRY_ROOT "HKCU"
+!define MUI_LANGDLL_REGISTRY_KEY "Software\${INFO_COMPANYNAME}\${INFO_PRODUCTNAME}"
+!define MUI_LANGDLL_REGISTRY_VALUENAME "InstallerLanguage"
 
 !insertmacro MUI_PAGE_WELCOME # Welcome to the installer page.
+!insertmacro MUI_PAGE_COMPONENTS # Optional components (e.g. auto start).
 # !insertmacro MUI_PAGE_LICENSE "resources\eula.txt" # Adds a EULA page to the installer
 !insertmacro MUI_PAGE_DIRECTORY # In which folder install page.
 !insertmacro MUI_PAGE_INSTFILES # Installing page.
 !insertmacro MUI_PAGE_FINISH # Finished installation page.
 
+!insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES # Uinstalling page
 
-!insertmacro MUI_LANGUAGE "English" # Set the Language of the installer
+!insertmacro MUI_LANGUAGE "English"
+!insertmacro MUI_LANGUAGE "SimpChinese"
+
+!define DATA_DIR "$APPDATA\${INFO_PROJECTNAME}"
+!define DATA_RULES_DIR "${DATA_DIR}\rules"
+!define RULES_SOURCE_DIR "..\..\..\rules"
+
+LangString MSG_UNINSTALL_RUNNING ${LANG_ENGLISH} "${INFO_PRODUCTNAME} is running and will be closed to continue uninstalling. Continue?"
+LangString MSG_UNINSTALL_RUNNING ${LANG_SIMPCHINESE} "${INFO_PRODUCTNAME} is running and will be closed to continue uninstalling. Continue?"
+LangString SEC_SHORTCUTS ${LANG_ENGLISH} "Create shortcuts"
+LangString SEC_SHORTCUTS ${LANG_SIMPCHINESE} "创建快捷方式"
+LangString SEC_AUTOSTART ${LANG_ENGLISH} "Start ${INFO_PRODUCTNAME} with Windows"
+LangString SEC_AUTOSTART ${LANG_SIMPCHINESE} "开机自启"
+LangString DESC_SHORTCUTS ${LANG_ENGLISH} "Create Start Menu and Desktop shortcuts."
+LangString DESC_SHORTCUTS ${LANG_SIMPCHINESE} "创建开始菜单和桌面快捷方式。"
+LangString DESC_AUTOSTART ${LANG_ENGLISH} "Launch ${INFO_PRODUCTNAME} automatically when you sign in."
+LangString DESC_AUTOSTART ${LANG_SIMPCHINESE} "登录后自动启动 ${INFO_PRODUCTNAME}。"
 
 ## The following two statements can be used to sign the installer and the uninstaller. The path to the binaries are provided in %1
 #!uninstfinalize 'signtool --file "%1"'
@@ -72,14 +96,10 @@ ManifestDPIAware true
 
 Name "${INFO_PRODUCTNAME}"
 OutFile "..\..\bin\${INFO_PROJECTNAME}-${ARCH}-installer.exe" # Name of the installer's file.
-InstallDir "$PROGRAMFILES64\${INFO_COMPANYNAME}\${INFO_PRODUCTNAME}" # Default installing folder ($PROGRAMFILES is Program Files folder).
+InstallDir "$PROGRAMFILES64\${INFO_PRODUCTNAME}" # Default installing folder ($PROGRAMFILES is Program Files folder).
 ShowInstDetails show # This will always show the installation details.
 
-Function .onInit
-   !insertmacro wails.checkArchitecture
-FunctionEnd
-
-Section
+Section "-Main" SEC_MAIN
     !insertmacro wails.setShellContext
 
     !insertmacro wails.webview2runtime
@@ -88,8 +108,11 @@ Section
 
     !insertmacro wails.files
 
-    CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
-    CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
+    CreateDirectory "${DATA_DIR}"
+    CreateDirectory "${DATA_RULES_DIR}"
+    SetOutPath "${DATA_RULES_DIR}"
+    File /r "${RULES_SOURCE_DIR}\*.json"
+    SetOutPath $INSTDIR
 
     !insertmacro wails.associateFiles
     !insertmacro wails.associateCustomProtocols
@@ -97,12 +120,22 @@ Section
     !insertmacro wails.writeUninstaller
 SectionEnd
 
+Section /o "$(SEC_SHORTCUTS)" SEC_SHORTCUTS
+    CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
+    CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
+SectionEnd
+
+Section /o "$(SEC_AUTOSTART)" SEC_AUTOSTART
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${INFO_PRODUCTNAME}" "$\"$INSTDIR\${PRODUCT_EXECUTABLE}$\""
+SectionEnd
+
 Section "uninstall"
     !insertmacro wails.setShellContext
 
-    RMDir /r "$AppData\${PRODUCT_EXECUTABLE}" # Remove the WebView2 DataPath
+    DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${INFO_PRODUCTNAME}"
 
-    RMDir /r $INSTDIR
+    Delete /REBOOTOK "$INSTDIR\${PRODUCT_EXECUTABLE}"
+    Delete /REBOOTOK "$INSTDIR\uninstall.exe"
 
     Delete "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk"
     Delete "$DESKTOP\${INFO_PRODUCTNAME}.lnk"
@@ -110,5 +143,41 @@ Section "uninstall"
     !insertmacro wails.unassociateFiles
     !insertmacro wails.unassociateCustomProtocols
 
+    RMDir /r "$APPDATA\${PRODUCT_EXECUTABLE}" # Remove WebView2 data path if present.
+    RMDir /r "${DATA_DIR}"
+    RMDir /r "$LOCALAPPDATA\${INFO_PROJECTNAME}"
+    RMDir /r $INSTDIR
+
     !insertmacro wails.deleteUninstaller
 SectionEnd
+
+!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+    !insertmacro MUI_DESCRIPTION_TEXT ${SEC_SHORTCUTS} "$(DESC_SHORTCUTS)"
+    !insertmacro MUI_DESCRIPTION_TEXT ${SEC_AUTOSTART} "$(DESC_AUTOSTART)"
+!insertmacro MUI_FUNCTION_DESCRIPTION_END
+
+Function .onInit
+   !insertmacro MUI_LANGDLL_DISPLAY
+   !insertmacro wails.checkArchitecture
+   SectionGetFlags ${SEC_SHORTCUTS} $0
+   IntOp $0 $0 | ${SF_SELECTED}
+   SectionSetFlags ${SEC_SHORTCUTS} $0
+   SectionGetFlags ${SEC_AUTOSTART} $1
+   IntOp $1 $1 | ${SF_SELECTED}
+   SectionSetFlags ${SEC_AUTOSTART} $1
+FunctionEnd
+
+Function un.onInit
+    !insertmacro MUI_LANGDLL_DISPLAY
+    nsExec::ExecToStack 'cmd /C tasklist /FI "IMAGENAME eq ${PRODUCT_EXECUTABLE}" /FO CSV /NH ^| find /I "${PRODUCT_EXECUTABLE}"'
+    Pop $0
+    Pop $1
+    StrCmp $0 "0" 0 done
+    IfSilent silentKill
+    MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "$(MSG_UNINSTALL_RUNNING)" IDOK +2
+    Abort
+silentKill:
+    ExecWait 'taskkill /F /IM ${PRODUCT_EXECUTABLE}'
+    Sleep 500
+done:
+FunctionEnd

@@ -5,5 +5,12 @@
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
-  "frontend:dev:serverUrl": "auto"
+  "frontend:dev:serverUrl": "auto",
+  "info": {
+    "companyName": "RunGrid",
+    "productName": "RunGrid",
+    "productVersion": "0.1.0",
+    "copyright": "Copyright (c) 2025 RunGrid",
+    "comments": "Built with Wails (https://wails.io)"
+  }
 }
