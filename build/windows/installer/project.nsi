@@ -50,13 +50,16 @@ ManifestDPIAware true
 
 !include "MUI.nsh"
 !include "Sections.nsh"
+!include "StrFunc.nsh"
+
+${UnStrStr}
 
 !define MUI_ICON "..\icon.ico"
 !define MUI_UNICON "..\icon.ico"
 # !define MUI_WELCOMEFINISHPAGE_BITMAP "resources\leftimage.bmp" #Include this to add a bitmap on the left side of the Welcome Page. Must be a size of 164x314
 !define MUI_FINISHPAGE_NOAUTOCLOSE # Wait on the INSTFILES page so the user can take a look into the details of the installation steps
 !define MUI_FINISHPAGE_RUN "$INSTDIR\\${PRODUCT_EXECUTABLE}"
-!define MUI_FINISHPAGE_RUN_TEXT "Launch ${INFO_PRODUCTNAME}"
+!define MUI_FINISHPAGE_RUN_TEXT "$(RUN_TEXT)"
 !define MUI_ABORTWARNING # This will warn the user if they exit from the installer.
 !define MUI_LANGDLL_REGISTRY_ROOT "HKCU"
 !define MUI_LANGDLL_REGISTRY_KEY "Software\${INFO_COMPANYNAME}\${INFO_PRODUCTNAME}"
@@ -85,6 +88,8 @@ LangString SEC_SHORTCUTS ${LANG_ENGLISH} "Create shortcuts"
 LangString SEC_SHORTCUTS ${LANG_SIMPCHINESE} "创建快捷方式"
 LangString SEC_AUTOSTART ${LANG_ENGLISH} "Start ${INFO_PRODUCTNAME} with Windows"
 LangString SEC_AUTOSTART ${LANG_SIMPCHINESE} "开机自启"
+LangString RUN_TEXT ${LANG_ENGLISH} "Launch ${INFO_PRODUCTNAME}"
+LangString RUN_TEXT ${LANG_SIMPCHINESE} "立即启动 ${INFO_PRODUCTNAME}"
 LangString DESC_SHORTCUTS ${LANG_ENGLISH} "Create Start Menu and Desktop shortcuts."
 LangString DESC_SHORTCUTS ${LANG_SIMPCHINESE} "创建开始菜单和桌面快捷方式。"
 LangString DESC_AUTOSTART ${LANG_ENGLISH} "Launch ${INFO_PRODUCTNAME} automatically when you sign in."
@@ -169,15 +174,16 @@ FunctionEnd
 
 Function un.onInit
     !insertmacro MUI_LANGDLL_DISPLAY
-    nsExec::ExecToStack 'cmd /C tasklist /FI "IMAGENAME eq ${PRODUCT_EXECUTABLE}" /FO CSV /NH ^| find /I "${PRODUCT_EXECUTABLE}"'
+    nsExec::ExecToStack '"$SYSDIR\\tasklist.exe" /FI "IMAGENAME eq ${PRODUCT_EXECUTABLE}" /FO CSV /NH'
     Pop $0
     Pop $1
-    StrCmp $0 "0" 0 done
+    ${UnStrStr} $2 $1 "${PRODUCT_EXECUTABLE}"
+    StrCmp $2 "" done
     IfSilent silentKill
     MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "$(MSG_UNINSTALL_RUNNING)" IDOK +2
     Abort
 silentKill:
-    ExecWait 'taskkill /F /IM ${PRODUCT_EXECUTABLE}'
+    ExecWait '"$SYSDIR\\taskkill.exe" /F /IM ${PRODUCT_EXECUTABLE}'
     Sleep 500
 done:
 FunctionEnd
