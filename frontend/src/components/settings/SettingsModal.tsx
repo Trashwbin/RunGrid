@@ -1,6 +1,12 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {ScrollArea} from '../ui/ScrollArea';
 import {
+  GetDataRoot,
+  PickDataRoot,
+  RestartApp,
+  SetDataRoot,
+} from '../../../wailsjs/go/main/App';
+import {
   DEFAULT_HOTKEYS,
   HOTKEY_ACTIONS,
   type HotkeyConfig,
@@ -12,6 +18,7 @@ import {
   type PanelPositionMode,
   type Preferences,
 } from '../../utils/preferences';
+import {useToastStore} from '../../store/overlays';
 import './SettingsModal.css';
 
 type SettingsModalProps = {
@@ -63,6 +70,12 @@ export function SettingsModal({
     ...initialPreferences,
   });
   const [recordingId, setRecordingId] = useState<string | null>(null);
+  const [dataRoot, setDataRoot] = useState('');
+  const [dataRootLoading, setDataRootLoading] = useState(true);
+  const [dataRootSaving, setDataRootSaving] = useState(false);
+  const [dataRootRestarting, setDataRootRestarting] = useState(false);
+  const [dataRootMessage, setDataRootMessage] = useState<string | null>(null);
+  const notify = useToastStore((state) => state.notify);
 
   useEffect(() => {
     setHotkeys({...DEFAULT_HOTKEYS, ...initialHotkeys});
@@ -124,6 +137,36 @@ export function SettingsModal({
     };
   }, [recordingId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const loadDataRoot = async () => {
+      setDataRootLoading(true);
+      try {
+        const root = await GetDataRoot();
+        if (!cancelled) {
+          setDataRoot(root);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setDataRootMessage('读取数据目录失败');
+          notify({
+            type: 'error',
+            title: '读取失败',
+            message: err instanceof Error ? err.message : '无法读取数据目录',
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setDataRootLoading(false);
+        }
+      }
+    };
+    void loadDataRoot();
+    return () => {
+      cancelled = true;
+    };
+  }, [notify]);
+
   const handleReset = useCallback(() => {
     setHotkeys({...DEFAULT_HOTKEYS});
   }, []);
@@ -135,6 +178,52 @@ export function SettingsModal({
   const handleRecord = useCallback((id: string) => {
     setRecordingId((prev) => (prev === id ? null : id));
   }, []);
+
+  const handlePickDataRoot = useCallback(async () => {
+    if (dataRootSaving) {
+      return;
+    }
+    setDataRootMessage(null);
+    try {
+      const selected = await PickDataRoot();
+      const trimmed = selected.trim();
+      if (!trimmed) {
+        return;
+      }
+      setDataRootSaving(true);
+      const next = await SetDataRoot(trimmed);
+      setDataRoot(next);
+      setDataRootMessage('已保存，重启应用后迁移数据');
+      notify({
+        type: 'success',
+        title: '数据目录已更新',
+        message: '重启 RunGrid 后会迁移数据库与图标缓存。',
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : '更新数据目录失败';
+      setDataRootMessage(message);
+      notify({type: 'error', title: '更新失败', message});
+    } finally {
+      setDataRootSaving(false);
+    }
+  }, [dataRootSaving, notify]);
+
+  const handleRestart = useCallback(async () => {
+    if (dataRootRestarting) {
+      return;
+    }
+    setDataRootMessage(null);
+    setDataRootRestarting(true);
+    try {
+      await RestartApp();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '重启失败';
+      setDataRootMessage(message);
+      setDataRootRestarting(false);
+      notify({type: 'error', title: '重启失败', message});
+    }
+  }, [dataRootRestarting, notify]);
 
   const activeContent = useMemo(() => {
     if (activeTab === 'general') {
@@ -327,6 +416,62 @@ export function SettingsModal({
       );
     }
 
+    if (activeTab === 'storage') {
+      const dataRootDisplay = dataRootLoading
+        ? '正在读取...'
+        : dataRoot || '未设置';
+      return (
+        <div className="settings-storage">
+          <div className="settings-section-header">
+            <div>
+              <h3 className="settings-section-title">数据存储</h3>
+              <p className="settings-section-desc">
+                选择 RunGrid 的数据库、图标缓存与规则文件存放位置。
+              </p>
+            </div>
+          </div>
+          <div className="settings-option settings-option--stack">
+            <div className="settings-option-info">
+              <div className="settings-option-title">数据目录</div>
+              <div className="settings-option-desc">
+                修改后需要重启应用，启动时会自动迁移现有数据。
+              </div>
+            </div>
+            <div className="settings-storage-row">
+              <input
+                type="text"
+                className="settings-path-input"
+                value={dataRootDisplay}
+                readOnly
+                title={dataRootDisplay}
+              />
+              <div className="settings-path-actions">
+                <button
+                  type="button"
+                  className="settings-path-button"
+                  onClick={handlePickDataRoot}
+                  disabled={dataRootLoading || dataRootSaving}
+                >
+                  {dataRootSaving ? '保存中...' : '选择目录'}
+                </button>
+                <button
+                  type="button"
+                  className="settings-path-button settings-path-button--primary"
+                  onClick={handleRestart}
+                  disabled={dataRootRestarting}
+                >
+                  {dataRootRestarting ? '正在重启...' : '立即重启'}
+                </button>
+              </div>
+            </div>
+            {dataRootMessage ? (
+              <div className="settings-storage-message">{dataRootMessage}</div>
+            ) : null}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="settings-placeholder">
         <div className="settings-placeholder-title">功能即将上线</div>
@@ -338,9 +483,16 @@ export function SettingsModal({
     handleClear,
     handleRecord,
     handleReset,
+    handlePickDataRoot,
+    handleRestart,
     hotkeys,
     recordingId,
     preferences,
+    dataRoot,
+    dataRootLoading,
+    dataRootMessage,
+    dataRootRestarting,
+    dataRootSaving,
   ]);
 
   return (

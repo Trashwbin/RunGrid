@@ -127,6 +127,11 @@
   border: 1px solid var(--outline);
 }
 
+.settings-option--stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
 .settings-option-info {
   display: flex;
   flex-direction: column;
@@ -186,6 +191,75 @@
   color: var(--text-primary);
   background: var(--surface-strong);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.settings-storage {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-storage-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+}
+
+.settings-path-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.settings-path-input {
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--outline);
+  background: var(--surface);
+  color: var(--text-primary);
+  padding: 0 12px;
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+}
+
+.settings-path-input:focus {
+  border-color: rgba(122, 162, 255, 0.6);
+  box-shadow: 0 0 0 2px rgba(122, 162, 255, 0.16);
+}
+
+.settings-path-button {
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--outline);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 0 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.settings-path-button:hover {
+  border-color: var(--outline-strong);
+}
+
+.settings-path-button--primary {
+  border-color: rgba(122, 162, 255, 0.6);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 1px rgba(122, 162, 255, 0.18);
+}
+
+.settings-path-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.settings-storage-message {
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .settings-switch {

@@ -30,6 +30,10 @@ export function GetCursorAnchorPosition(arg1, arg2) {
   return window['go']['main']['App']['GetCursorAnchorPosition'](arg1, arg2);
 }
 
+export function GetDataRoot() {
+  return window['go']['main']['App']['GetDataRoot']();
+}
+
 export function ImportGroupRules(arg1) {
   return window['go']['main']['App']['ImportGroupRules'](arg1);
 }
@@ -52,6 +56,10 @@ export function ListScanRoots() {
 
 export function OpenItemLocation(arg1) {
   return window['go']['main']['App']['OpenItemLocation'](arg1);
+}
+
+export function PickDataRoot() {
+  return window['go']['main']['App']['PickDataRoot']();
 }
 
 export function PickIconSource() {
@@ -86,8 +94,16 @@ export function RefreshItemIcon(arg1) {
   return window['go']['main']['App']['RefreshItemIcon'](arg1);
 }
 
+export function RestartApp() {
+  return window['go']['main']['App']['RestartApp']();
+}
+
 export function ScanShortcuts(arg1) {
   return window['go']['main']['App']['ScanShortcuts'](arg1);
+}
+
+export function SetDataRoot(arg1) {
+  return window['go']['main']['App']['SetDataRoot'](arg1);
 }
 
 export function SetFavorite(arg1, arg2) {

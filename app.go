@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -32,10 +33,11 @@ type App struct {
 
 // NewApp creates a new App application struct
 func NewApp() (*App, error) {
-	dbPath, err := appDataPath("rungrid")
+	dataRoot, err := dataRootPath("rungrid", true)
 	if err != nil {
 		return nil, err
 	}
+	dbPath := filepath.Join(dataRoot, "rungrid.db")
 
 	db, err := sqlite.Open(dbPath)
 	if err != nil {
@@ -53,7 +55,7 @@ func NewApp() (*App, error) {
 	itemService := service.NewItemService(itemRepo)
 	groupService := service.NewGroupService(groupRepo)
 
-	iconRoot := filepath.Join(filepath.Dir(dbPath), "icons")
+	iconRoot := filepath.Join(dataRoot, "icons")
 	iconCache := icon.NewCache(iconRoot, icon.NewHybridExtractor())
 	iconService := service.NewIconService(iconCache, itemService)
 	hotkeyManager := hotkey.NewManager()
@@ -199,6 +201,60 @@ func (a *App) PickRuleFile() (string, error) {
 	})
 }
 
+func (a *App) GetDataRoot() (string, error) {
+	return dataRootPath("rungrid", false)
+}
+
+func (a *App) PickDataRoot() (string, error) {
+	return runtime.OpenDirectoryDialog(a.context(), runtime.OpenDialogOptions{
+		Title: "选择数据存储位置",
+	})
+}
+
+func (a *App) SetDataRoot(path string) (string, error) {
+	next := strings.TrimSpace(path)
+	if next == "" || !filepath.IsAbs(next) {
+		return "", storage.ErrInvalidInput
+	}
+	next = filepath.Clean(next)
+
+	current, err := dataRootPath("rungrid", false)
+	if err != nil {
+		return "", err
+	}
+	if strings.EqualFold(current, next) {
+		return current, nil
+	}
+	if err := prepareDataRootChange("rungrid", next); err != nil {
+		return "", err
+	}
+
+	cfg, _, err := loadStorageConfig("rungrid")
+	if err != nil {
+		return "", err
+	}
+	cfg.DataRoot = next
+	cfg.MigrateFrom = current
+	if err := saveStorageConfig("rungrid", cfg); err != nil {
+		return "", err
+	}
+	return next, nil
+}
+
+func (a *App) RestartApp() error {
+	executable, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command(executable, os.Args[1:]...)
+	cmd.Dir = filepath.Dir(executable)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	runtime.Quit(a.context())
+	return nil
+}
+
 func (a *App) ImportGroupRules(path string) (domain.RuleImportResult, error) {
 	if strings.TrimSpace(path) == "" {
 		return domain.RuleImportResult{}, storage.ErrInvalidInput
@@ -283,18 +339,4 @@ func (a *App) context() context.Context {
 		return a.ctx
 	}
 	return context.Background()
-}
-
-func appDataPath(appName string) (string, error) {
-	configDir, err := os.UserConfigDir()
-	if err != nil || configDir == "" {
-		configDir = "."
-	}
-
-	root := filepath.Join(configDir, appName)
-	if err := os.MkdirAll(root, 0o755); err != nil {
-		return "", err
-	}
-
-	return filepath.Join(root, "rungrid.db"), nil
 }

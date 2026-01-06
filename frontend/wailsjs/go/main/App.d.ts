@@ -16,6 +16,8 @@ export function DeleteItem(arg1:string):Promise<void>;
 
 export function GetCursorAnchorPosition(arg1:number,arg2:number):Promise<domain.Point>;
 
+export function GetDataRoot():Promise<string>;
+
 export function ImportGroupRules(arg1:string):Promise<domain.RuleImportResult>;
 
 export function LaunchItem(arg1:string):Promise<domain.Item>;
@@ -27,6 +29,8 @@ export function ListItems(arg1:string,arg2:string):Promise<Array<domain.Item>>;
 export function ListScanRoots():Promise<Array<string>>;
 
 export function OpenItemLocation(arg1:string):Promise<void>;
+
+export function PickDataRoot():Promise<string>;
 
 export function PickIconSource():Promise<string>;
 
@@ -44,7 +48,11 @@ export function RecordLaunch(arg1:string):Promise<domain.Item>;
 
 export function RefreshItemIcon(arg1:string):Promise<domain.Item>;
 
+export function RestartApp():Promise<void>;
+
 export function ScanShortcuts(arg1:Array<string>):Promise<domain.ScanResult>;
+
+export function SetDataRoot(arg1:string):Promise<string>;
 
 export function SetFavorite(arg1:string,arg2:boolean):Promise<domain.Item>;
 
