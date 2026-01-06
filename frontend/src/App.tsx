@@ -396,14 +396,12 @@ function App() {
 
   useEffect(() => {
     const off = EventsOn('window:show', () => {
-      setIsWindowHidden(false);
-      void applyPanelPosition();
-      focusSearch();
+      void showWindow();
     });
     return () => {
       off();
     };
-  }, [applyPanelPosition, focusSearch]);
+  }, [showWindow]);
 
   useEffect(() => {
     if (

@@ -8,6 +8,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 //go:embed all:frontend/dist
@@ -40,6 +41,15 @@ func main() {
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.startup,
 		OnShutdown:       app.shutdown,
+		SingleInstanceLock: &options.SingleInstanceLock{
+			UniqueId: "rungrid",
+			OnSecondInstanceLaunch: func(_ options.SecondInstanceData) {
+				ctx := app.context()
+				runtime.WindowShow(ctx)
+				runtime.WindowUnminimise(ctx)
+				runtime.EventsEmit(ctx, "window:show")
+			},
+		},
 		Windows: &windows.Options{
 			DisableWindowIcon: false,
 		},
