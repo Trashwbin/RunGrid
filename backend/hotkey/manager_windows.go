@@ -285,13 +285,15 @@ func parseHotkey(value string) (uint, uint, error) {
 	if keyToken == "" {
 		return 0, 0, fmt.Errorf("快捷键缺少主键")
 	}
-	if mod == 0 {
-		return 0, 0, fmt.Errorf("快捷键需要包含修饰键")
-	}
 
 	vk, ok := keyToVK(keyToken)
 	if !ok {
 		return 0, 0, fmt.Errorf("不支持的按键")
+	}
+	if mod == 0 {
+		if vk < vkF1 || vk > vkF1+23 {
+			return 0, 0, fmt.Errorf("快捷键需要包含修饰键")
+		}
 	}
 	return mod, vk, nil
 }

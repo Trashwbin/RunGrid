@@ -9,7 +9,7 @@ export type HotkeyAction = {
 const STORAGE_KEY = 'rungrid.hotkeys';
 
 export const DEFAULT_HOTKEYS: HotkeyConfig = {
-  'toggle-app': 'Ctrl+Q',
+  'toggle-app': 'F1',
 };
 
 export const HOTKEY_ACTIONS: HotkeyAction[] = [
