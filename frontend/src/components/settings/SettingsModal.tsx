@@ -60,7 +60,7 @@ export function SettingsModal({
   initialPreferences,
   onPreferencesChange,
 }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<TabId>('hotkeys');
+  const [activeTab, setActiveTab] = useState<TabId>('general');
   const [hotkeys, setHotkeys] = useState<HotkeyConfig>({
     ...DEFAULT_HOTKEYS,
     ...initialHotkeys,
