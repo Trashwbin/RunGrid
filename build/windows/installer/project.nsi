@@ -169,6 +169,21 @@ SectionEnd
 Function .onInit
    !insertmacro MUI_LANGDLL_DISPLAY
    !insertmacro wails.checkArchitecture
+   StrCpy $R0 ""
+   SetRegView 64
+   ReadRegStr $R0 HKLM "${UNINST_KEY}" "InstallLocation"
+   StrCmp $R0 "" 0 setInstallDir
+   ReadRegStr $R0 HKCU "${UNINST_KEY}" "InstallLocation"
+   StrCmp $R0 "" 0 setInstallDir
+   SetRegView 32
+   ReadRegStr $R0 HKLM "${UNINST_KEY}" "InstallLocation"
+   StrCmp $R0 "" 0 setInstallDir
+   ReadRegStr $R0 HKCU "${UNINST_KEY}" "InstallLocation"
+   StrCmp $R0 "" 0 setInstallDir
+   Goto doneInstallDir
+setInstallDir:
+   StrCpy $INSTDIR "$R0"
+doneInstallDir:
    nsExec::ExecToStack '"$SYSDIR\\tasklist.exe" /FI "IMAGENAME eq ${PRODUCT_EXECUTABLE}" /FO CSV /NH'
    Pop $0
    Pop $1
