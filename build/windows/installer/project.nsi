@@ -52,6 +52,7 @@ ManifestDPIAware true
 !include "Sections.nsh"
 !include "StrFunc.nsh"
 
+${StrStr}
 ${UnStrStr}
 
 !define MUI_ICON "..\icon.ico"
@@ -84,6 +85,8 @@ ${UnStrStr}
 
 LangString MSG_UNINSTALL_RUNNING ${LANG_ENGLISH} "${INFO_PRODUCTNAME} is running and will be closed to continue uninstalling. Continue?"
 LangString MSG_UNINSTALL_RUNNING ${LANG_SIMPCHINESE} "${INFO_PRODUCTNAME} is running and will be closed to continue uninstalling. Continue?"
+LangString MSG_INSTALL_RUNNING ${LANG_ENGLISH} "${INFO_PRODUCTNAME} is running and will be closed to continue installing. Continue?"
+LangString MSG_INSTALL_RUNNING ${LANG_SIMPCHINESE} "${INFO_PRODUCTNAME} 正在运行，将被关闭以继续安装。是否继续？"
 LangString SEC_SHORTCUTS ${LANG_ENGLISH} "Create shortcuts"
 LangString SEC_SHORTCUTS ${LANG_SIMPCHINESE} "创建快捷方式"
 LangString SEC_AUTOSTART ${LANG_ENGLISH} "Start ${INFO_PRODUCTNAME} with Windows"
@@ -102,6 +105,7 @@ LangString DESC_AUTOSTART ${LANG_SIMPCHINESE} "登录后自动启动 ${INFO_PROD
 Name "${INFO_PRODUCTNAME}"
 OutFile "..\..\bin\${INFO_PROJECTNAME}-${ARCH}-installer.exe" # Name of the installer's file.
 InstallDir "$PROGRAMFILES64\${INFO_PRODUCTNAME}" # Default installing folder ($PROGRAMFILES is Program Files folder).
+InstallDirRegKey HKLM "${UNINST_KEY}" "InstallLocation"
 ShowInstDetails show # This will always show the installation details.
 
 Section "-Main" SEC_MAIN
@@ -123,6 +127,7 @@ Section "-Main" SEC_MAIN
     !insertmacro wails.associateCustomProtocols
 
     !insertmacro wails.writeUninstaller
+    WriteRegStr HKLM "${UNINST_KEY}" "InstallLocation" "$INSTDIR"
 SectionEnd
 
 Section /o "$(SEC_SHORTCUTS)" SEC_SHORTCUTS
@@ -164,6 +169,18 @@ SectionEnd
 Function .onInit
    !insertmacro MUI_LANGDLL_DISPLAY
    !insertmacro wails.checkArchitecture
+   nsExec::ExecToStack '"$SYSDIR\\tasklist.exe" /FI "IMAGENAME eq ${PRODUCT_EXECUTABLE}" /FO CSV /NH'
+   Pop $0
+   Pop $1
+   ${StrStr} $2 $1 "${PRODUCT_EXECUTABLE}"
+   StrCmp $2 "" doneInstall
+   IfSilent silentInstallKill
+   MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "$(MSG_INSTALL_RUNNING)" IDOK +2
+   Abort
+silentInstallKill:
+   ExecWait '"$SYSDIR\\taskkill.exe" /F /IM ${PRODUCT_EXECUTABLE}'
+   Sleep 500
+doneInstall:
    SectionGetFlags ${SEC_SHORTCUTS} $0
    IntOp $0 $0 | ${SF_SELECTED}
    SectionSetFlags ${SEC_SHORTCUTS} $0
